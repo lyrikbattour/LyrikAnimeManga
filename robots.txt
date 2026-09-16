@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lyrik-anime-manga.vercel.app/sitemap.xml
