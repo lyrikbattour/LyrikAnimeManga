@@ -565,6 +565,8 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
 .mx-yt-open{flex:1; text-align:center; padding:6px; font-family:var(--mono); font-size:11px; color:var(--ink); text-decoration:none; border-right:1.5px solid var(--ink);}
 .mx-yt-msg{padding:6px 8px; font-size:12px; border-top:1.5px solid var(--ink); font-family:var(--mono);}
 .mx-yt-x{flex:1; display:block; border:0; background:var(--bg); color:var(--ink); font-family:var(--mono); font-size:11px; padding:6px; cursor:pointer;}
+.mx-yt-vol{display:flex; align-items:center; gap:8px; padding:6px 8px; border-top:1.5px solid var(--ink); font-size:12px;}
+.mx-yt-vol input{flex:1; min-width:0;}
 .mx-yt-x:hover{background:var(--ink); color:var(--bg);}
 .oped-col li .mx-play{width:28px; height:28px;}
 /* ===== v3 : dock lecteur, recherche, listes, défi du jour ===== */
@@ -5008,11 +5010,12 @@ document.getElementById('auc-on-quit-play-btn').addEventListener('click', quitAu
     if(ytBtn!==btn) return;
     if(!ok){ ytStop(); btn.classList.add('na'); btn.textContent='×'; btn.title='Lecture indisponible (YouTube bloqué ?)'; return; }
     const row = btn.closest('li,.track-item') || btn.parentElement;
-    ytBox = document.createElement('div'); ytBox.className='mx-yt mx-dock';
-    ytBox.innerHTML='<div class="mx-now"></div><div class="mx-yt-el"></div><div class="mx-yt-bar"><a class="mx-yt-open" target="_blank" rel="noopener">Ouvrir sur YouTube ↗</a><button type="button" class="mx-yt-x" aria-label="Fermer le lecteur">× fermer</button></div><div class="mx-yt-msg" hidden></div>';
+    ytBox = document.createElement(row&&row.tagName==='LI'?'li':'div'); ytBox.className='mx-yt';
+    ytBox.innerHTML='<div class="mx-now"></div><div class="mx-yt-el"></div><div class="mx-yt-vol"><span>🔊</span><input type="range" min="0" max="100" value="100" aria-label="Volume"></div><div class="mx-yt-bar"><a class="mx-yt-open" target="_blank" rel="noopener">Ouvrir sur YouTube ↗</a><button type="button" class="mx-yt-x" aria-label="Fermer le lecteur">× fermer</button></div><div class="mx-yt-msg" hidden></div>';
     const lnk = ()=>{ const a=ytBox&&ytBox.querySelector('.mx-yt-open'); if(a) a.href='https://www.youtube.com/watch?v='+(ytC[Math.min(ytI,ytC.length-1)]||''); };
     lnk();
-    document.body.appendChild(ytBox); ytBox.querySelector('.mx-now').textContent = '♪ ' + (btn.dataset.anime||'') + ' — ' + (btn.dataset.title||'');
+    if(row && row.parentNode) row.insertAdjacentElement('afterend', ytBox); else { ytBox.classList.add('mx-dock'); document.body.appendChild(ytBox); } ytBox.querySelector('.mx-now').textContent = '♪ ' + (btn.dataset.anime||'') + ' — ' + (btn.dataset.title||'');
+    ytBox.querySelector('.mx-yt-vol input').oninput = e=>{ try{ ytP.setVolume(+e.target.value); if(+e.target.value>0) ytP.unMute(); }catch(x){} };
     ytBox.querySelector('.mx-yt-x').onclick = ()=> window.mxStopPlayer();
     ytP = new YT.Player(ytBox.querySelector('.mx-yt-el'), {
       width:'100%', height:'170', videoId: ytC[0],
