@@ -6357,5 +6357,19 @@ header .brand .sub{display:none;}
 })();
 </script>
 
+<style id="mx-anim-css">
+@keyframes mxPop{0%{transform:scale(.7);}60%{transform:scale(1.18);}100%{transform:scale(1);}}
+@media (prefers-reduced-motion:no-preference){
+  .card:active{transform:scale(.97) !important; transition:transform .1s !important;}
+  .cover{transition:filter .35s ease;} .card:hover .cover{filter:saturate(1.15) contrast(1.04);}
+  .chip:active{transform:scale(.94);}
+  .chips-row .chip.active{animation:mxPop .3s ease;}
+  #mx-tabbar button.on svg{animation:mxPop .35s ease;}
+  #mx-tabbar button:active svg{transform:scale(.86);}
+  #mx-top.show{animation:mxPop .3s ease;}
+  .track-item{transition:background .15s;} .track-item:hover{background:var(--bg-alt);}
+  .fav-btn:active,.mx-fav:active{animation:mxPop .3s ease;}
+}
+</style>
 </body>
 </html>
