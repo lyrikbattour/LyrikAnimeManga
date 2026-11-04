@@ -1,0 +1,35 @@
+REGLES FIRESTORE POUR LE CHAT (à ajouter dans Firebase)
+=======================================================
+Console Firebase > projet "lyrikanimemanga" > Firestore Database > onglet "Règles".
+IMPORTANT : garde tes règles actuelles pour animedex/data et les salons de jeu,
+et AJOUTE seulement les blocs "chat_..." ci-dessous à l'intérieur de
+"match /databases/{database}/documents { ... }". Puis clique "Publier".
+
+    // --- Chat communauté ---
+    match /chat_{room}/{msgId} {
+      allow read: if room in ['general','anime','manga','music','games'];
+      allow create: if room in ['general','anime','manga','music','games']
+                    && request.resource.data.keys().hasOnly(['uid','name','text','ts'])
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 500
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() <= 40;
+      allow delete: if room in ['general','anime','manga','music','games'];
+    }
+    match /chat_reports/{id} {
+      allow read, create, delete: if true;
+    }
+    match /chat_meta/{id} {
+      allow read, write: if true;
+    }
+
+LIMITES À CONNAÎTRE
+- Le site n'utilise pas Firebase Authentication : les comptes sont gérés dans le navigateur.
+  Donc la modération (« admin », blocage, suppression) est vérifiée côté site, pas côté serveur.
+  Un utilisateur technique pourrait contourner ces règles. Suffisant pour une petite communauté,
+  pas pour un gros site public.
+- Pour sécuriser vraiment : migrer vers Firebase Authentication (connexion Google/e-mail),
+  puis remplacer "if true" par des conditions sur request.auth.uid / un champ admin.
+- Admin = le compte avec l'e-mail lyrikbattour@gmail.com. Crée ce compte toi-même en premier
+  (sinon quelqu'un d'autre pourrait s'inscrire avec cet e-mail).

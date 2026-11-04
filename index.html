@@ -24,7 +24,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc
+    getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import { getAnalytics, logEvent, isSupported } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
 
@@ -85,6 +85,23 @@
   window.fbListenRoom = (code, callback, collectionName) => {
     return onSnapshot(doc(db, collectionName || "imposter_rooms", code), (snap) => { if(snap.exists()) callback(snap.data()); else callback(null); });
   };
+
+  // ---- Chat communauté ----
+  window.fbChatListen = (room, cb, errCb) => {
+    const q = query(collection(db, 'chat_' + room), orderBy('ts', 'desc'), limit(80));
+    return onSnapshot(q, (snap) => {
+      const list = []; snap.forEach(d => list.push(Object.assign({ id: d.id }, d.data())));
+      cb(list.reverse());
+    }, (e) => { if (errCb) errCb(e); });
+  };
+  window.fbChatSend = (room, data) => addDoc(collection(db, 'chat_' + room), data);
+  window.fbChatDelete = (room, id) => deleteDoc(doc(db, 'chat_' + room, id));
+  window.fbChatReport = (data) => addDoc(collection(db, 'chat_reports'), data);
+  window.fbChatListenReports = (cb) => onSnapshot(collection(db, 'chat_reports'), (snap) => {
+    const list = []; snap.forEach(d => list.push(Object.assign({ id: d.id }, d.data())));
+    list.sort((a, b) => (b.ts || 0) - (a.ts || 0)); cb(list);
+  }, () => cb([]));
+  window.fbChatDeleteReport = (id) => deleteDoc(doc(db, 'chat_reports', id));
 
   window.fbReady = true;
   window.dispatchEvent(new Event('firebase-ready'));
@@ -5653,9 +5670,10 @@ function openProfile(){
 document.getElementById('back-to-anime-from-profile').addEventListener('click', ()=> switchView(lastMainView));
 
 // ============== TOP 10 LISTS ==============
-function topFieldFor(kind){ return kind==='anime' ? 'topAnime' : kind==='manga' ? 'topManga' : 'topCharacters'; }
+function topFieldFor(kind){ return ({anime:'topAnime',manga:'topManga',character:'topCharacters',op:'topOp',ed:'topEd',ost:'topOst'})[kind] || 'topCharacters'; }
 
 function resolveTopKey(key){
+  if(key.startsWith('song:') && window.mxResolveSong) return window.mxResolveSong(key);
   if(key.startsWith('char:')){
     const r = resolveCharByKey(key);
     if(!r) return null;
@@ -5688,6 +5706,7 @@ let topEditor = { kind:'anime', selection:[] };
 function getCatalogPool(kind){
   if(kind==='anime') return ANIME.map(a=>({key:`anime:${a.id}`, title:a.title, sub:a.genres.join(' · '), genres:a.genres, image:a.image}));
   if(kind==='manga') return MANGA.map(m=>({key:`manga:${m.id}`, title:m.title, sub:m.genres.join(' · '), genres:m.genres, image:m.image}));
+  if(kind==='op'||kind==='ed'||kind==='ost') return window.mxSongPool ? window.mxSongPool(kind) : [];
   const list = [];
   ANIME.forEach(a=> a.characters.forEach(c=> list.push({key:`char:anime:${a.id}:${slugify(c.name)}`, title:c.name, sub:a.title, genres:null, image:c.image || a.image})));
   MANGA.forEach(m=> m.characters.forEach(c=> list.push({key:`char:manga:${m.id}:${slugify(c.name)}`, title:c.name, sub:m.title, genres:null, image:c.image || m.image})));
@@ -5700,7 +5719,7 @@ function openTopEditor(kind){
   if(!currentUser){ openAuthModal(); return; }
   topEditor = { kind, selection:[...(currentUser[topFieldFor(kind)] || [])] };
   topEditorGenre = 'Tous';
-  const labels = { anime:'Mon Top 10 Animés', manga:'Mon Top 10 Mangas', character:'Mon Top 10 Personnages' };
+  const labels = { anime:'Mon Top 10 Animés', manga:'Mon Top 10 Mangas', character:'Mon Top 10 Personnages', op:'Mon Top 10 Openings', ed:'Mon Top 10 Endings', ost:'Mon Top 10 OST' };
   document.getElementById('top-editor-title').textContent = labels[kind];
   document.getElementById('top-editor-search').value = '';
   renderTopEditorGenreChips();
@@ -5718,7 +5737,7 @@ document.getElementById('top-editor-overlay').addEventListener('click', (e)=>{
 
 function renderTopEditorGenreChips(){
   const wrap = document.getElementById('top-editor-genre-chips');
-  if(topEditor.kind === 'character'){ wrap.innerHTML = ''; return; }
+  if(topEditor.kind === 'character' || topEditor.kind === 'op' || topEditor.kind === 'ed' || topEditor.kind === 'ost'){ wrap.innerHTML = ''; return; }
   const pool = getCatalogPool(topEditor.kind);
   const genreSet = new Set();
   pool.forEach(p=> p.genres.forEach(g=> genreSet.add(g)));
@@ -5736,8 +5755,8 @@ function renderTopEditorGenreChips(){
 function renderTopEditorResults(query){
   let pool = getCatalogPool(topEditor.kind);
   const q = query.trim().toLowerCase();
-  if(q) pool = pool.filter(p=>p.title.toLowerCase().includes(q));
-  if(topEditor.kind !== 'character' && topEditorGenre !== 'Tous') pool = pool.filter(p=> p.genres.includes(topEditorGenre));
+  if(q) pool = pool.filter(p=>p.title.toLowerCase().includes(q) || (p.sub||'').toLowerCase().includes(q));
+  if((topEditor.kind === 'anime' || topEditor.kind === 'manga') && topEditorGenre !== 'Tous') pool = pool.filter(p=> p.genres.includes(topEditorGenre));
   const filtered = pool.slice(0, 60);
   const box = document.getElementById('top-editor-results');
   box.innerHTML = filtered.map((p,i)=>{
@@ -6314,7 +6333,7 @@ header .brand .sub{display:none;}
   function sync(){
     var v=activeView(), t=v;
     if(v==='detail'||v==='music'||v==='character'){ t=(typeof cameFrom!=='undefined'&&cameFrom==='manga')||/^manga/.test(typeof currentDetailKey!=='undefined'&&currentDetailKey||'')?'manga':'anime'; }
-    else if(GAMES[v]) t='games'; else if(v==='profile') t='profile'; else if(v!=='anime'&&v!=='manga') t='';
+    else if(GAMES[v]) t='games'; else if(v==='profile') t='profile'; else if(v==='community') t='community'; else if(v!=='anime'&&v!=='manga') t='';
     bar.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.dataset.t===t); });
     sheet.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.dataset.v===v); });
     buildJump(v);
@@ -6529,5 +6548,328 @@ header .brand .sub{display:none;}
   sync();
 })();
 </script>
+<style id="mx-v11-css">
+/* ===== COMMUNAUTÉ / CHAT / CLASSEMENTS / PARTAGE ===== */
+.cm-tabs{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 16px;}
+.cm-rooms{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 14px;}
+.cm-box{border:2px solid var(--ink); background:var(--bg); display:flex; flex-direction:column; height:min(62vh,560px);}
+.cm-msgs{flex:1; overflow-y:auto; padding:6px 0; -webkit-overflow-scrolling:touch;}
+.cm-msg{padding:9px 14px; border-bottom:1px solid var(--line); animation:mxRise .25s ease both;}
+.cm-msg:last-child{border-bottom:none;}
+.cm-head{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; font-family:var(--mono); font-size:11px; letter-spacing:.5px; color:var(--ink-faint);}
+.cm-head b{font-family:var(--body); font-size:13.5px; letter-spacing:0; color:var(--ink);}
+.cm-badge{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; border:1px solid var(--ink); padding:1px 5px; color:var(--ink);}
+.cm-text{font-size:14.5px; line-height:1.4; margin-top:3px; word-wrap:break-word; overflow-wrap:anywhere; white-space:pre-wrap;}
+.cm-act{margin-left:auto; display:flex; gap:10px;}
+.cm-act button{font-family:var(--mono); font-size:10px; letter-spacing:.8px; text-transform:uppercase; background:none; border:0; color:var(--ink-faint); cursor:pointer; padding:2px 0;}
+.cm-act button:hover{color:var(--ink); text-decoration:underline;}
+.cm-form{display:flex; gap:0; border-top:2px solid var(--ink);}
+.cm-form input{flex:1; min-width:0; border:0; padding:14px; font-family:var(--body); font-size:15px; background:var(--bg); color:var(--ink); outline:none;}
+.cm-form button{border:0; border-left:2px solid var(--ink); background:var(--ink); color:var(--bg); font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:0 20px; cursor:pointer;}
+.cm-login{padding:16px; text-align:center; border-top:2px solid var(--ink); font-size:14px;}
+.cm-empty{padding:30px 14px; text-align:center; color:var(--ink-faint); font-size:14px;}
+.cm-note{font-family:var(--mono); font-size:10.5px; letter-spacing:.5px; color:var(--ink-faint); margin-top:10px;}
+.cm-rank-row{display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); cursor:pointer;}
+.cm-rank-n{font-family:var(--display); font-size:22px; width:34px; flex-shrink:0; text-align:center;}
+.cm-rank-img{width:44px; height:58px; background-size:cover; background-position:center top; background-color:var(--bg-alt); border:1px solid var(--ink); flex-shrink:0;}
+.cm-rank-t{font-weight:700; font-size:14.5px; line-height:1.25;}
+.cm-rank-s{font-family:var(--mono); font-size:10.5px; letter-spacing:.5px; color:var(--ink-faint); text-transform:uppercase; margin-top:2px;}
+.cm-rank-p{margin-left:auto; text-align:right; font-family:var(--mono); font-size:11px; color:var(--ink-soft); flex-shrink:0;}
+.cm-rank-p b{display:block; font-family:var(--display); font-size:17px; color:var(--ink);}
+.cm-admin{margin-top:22px; border:2px dashed var(--ink); padding:14px;}
+.cm-admin h4{font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;}
+.cm-rep{border-top:1px solid var(--line); padding:9px 0; font-size:13.5px;}
+.cm-rep small{display:block; font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); margin-bottom:4px;}
+.cm-rep button{margin:6px 8px 0 0; font-family:var(--mono); font-size:10px; letter-spacing:.8px; text-transform:uppercase; border:1px solid var(--ink); background:var(--bg); color:var(--ink); padding:6px 9px; cursor:pointer;}
+.mx-share-btn{margin-left:8px;}
+#mx-share-overlay{position:fixed; inset:0; z-index:600; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; padding:16px;}
+#mx-share-overlay.show{display:flex;}
+#mx-share-box{background:var(--bg); border:2px solid var(--ink); max-width:520px; width:100%; max-height:94vh; overflow-y:auto; padding:16px; position:relative;}
+#mx-share-box img{width:100%; display:block; border:1px solid var(--ink); background:#0a0a0a; margin-bottom:12px;}
+#mx-share-box .row{display:flex; gap:8px; flex-wrap:wrap;}
+#mx-share-box .row button{flex:1 1 140px; font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:13px 10px; border:2px solid var(--ink); background:var(--bg); color:var(--ink); cursor:pointer;}
+#mx-share-box .row button.pri{background:var(--ink); color:var(--bg);}
+#mx-share-box .x{position:absolute; top:8px; right:10px; border:0; background:none; font-size:20px; color:var(--ink); cursor:pointer; z-index:2;}
+#mx-share-box p{font-size:12.5px; color:var(--ink-soft); margin-top:10px; line-height:1.4;}
+@media (max-width:640px){ #mx-tabbar button{font-size:9.5px;} .cm-box{height:calc(100vh - 360px); min-height:320px;} }
+</style>
+
+<style id="mx-v11-fix">
+#view-community .chips-row{padding-left:0; padding-right:0;}
+@media (max-width:640px){
+  #view-community .hero p{display:none;}
+  #view-community .cm-box{height:calc(100svh - 450px); min-height:260px;}
+}
+</style>
+<script id="mx-v11-js">
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var esc=function(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+  var ADMINS=['lyrikbattour@gmail.com'];
+  var ROOMS=[['general','Général'],['anime','Animés'],['manga','Mangas'],['music','OST / OP / ED'],['games','Jeux']];
+  var KINDS=[['anime','Animés'],['manga','Mangas'],['character','Persos'],['op','Openings'],['ed','Endings'],['ost','OST']];
+  var KLAB={anime:'ANIMÉS',manga:'MANGAS',character:'PERSONNAGES',op:'OPENINGS',ed:'ENDINGS',ost:'OST'};
+  var SITE='https://lyrik-anime-manga.vercel.app';
+  function whenFB(fn){ if(window.fbReady) fn(); else window.addEventListener('firebase-ready',fn,{once:true}); }
+  function me(){ return (typeof currentUser!=='undefined')?currentUser:null; }
+  function uidOf(u){ return 'u'+simpleHash(String(u.email).toLowerCase()); }
+  function isAdmin(){ var u=me(); return !!u && ADMINS.indexOf(String(u.email).toLowerCase())>-1; }
+  function adminUid(){ return ADMINS.map(function(e){return 'u'+simpleHash(e);}); }
+
+  /* ================= TOPS MUSIQUE : pool de chansons ================= */
+  var nk=function(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');};
+  var poolCache={};
+  window.mxSongPool=function(kind){
+    var c=poolCache[kind]; if(c && Date.now()-c.t<3000) return c.v;
+    var out=[], seen={}, yt=window.mxOstRef||{};
+    ANIME.forEach(function(a){
+      var names=[];
+      if(kind==='op') names=(a.openings||[]).concat(window.mxExtraSongs?window.mxExtraSongs(a.title,'Opening'):[]);
+      else if(kind==='ed') names=(a.endings||[]).concat(window.mxExtraSongs?window.mxExtraSongs(a.title,'Ending'):[]);
+      else names=(a.ost||[]).map(function(o){return o.name;}).concat((yt[nk(a.title)]||[]).map(function(o){return o.name||o[0];}));
+      names.forEach(function(n){
+        if(!n) return; var key='song:'+kind+':'+a.id+':'+slugify(String(n));
+        if(seen[key]) return; seen[key]=1;
+        out.push({key:key,title:String(n),sub:a.title,genres:null,image:a.image,aid:a.id});
+      });
+    });
+    poolCache[kind]={t:Date.now(),v:out}; return out;
+  };
+  window.mxResolveSong=function(key){
+    var kind=key.split(':')[1]; var p=window.mxSongPool(kind).filter(function(x){return x.key===key;})[0];
+    if(!p) return null;
+    return {title:p.title,sub:p.sub,image:p.image,onClick:function(){ openDetail(p.aid,'anime'); }};
+  };
+
+  /* sections "Mes tops" OP / ED / OST dans le profil */
+  (function(){
+    var anchor=$('top-character-list'); if(!anchor) return; var after=anchor.parentNode;
+    [['op','Mon Top 10 Openings'],['ed','Mon Top 10 Endings'],['ost','Mon Top 10 OST']].forEach(function(k){
+      var s=document.createElement('div'); s.className='detail-section';
+      s.innerHTML='<div class="section-label">'+k[1]+'</div><button class="back-btn" id="edit-top-'+k[0]+'-btn">Modifier mon Top 10</button><div id="top-'+k[0]+'-list" class="top-list"></div>';
+      after.parentNode.insertBefore(s,after.nextSibling); after=s;
+      $('edit-top-'+k[0]+'-btn').addEventListener('click',function(){ openTopEditor(k[0]); });
+    });
+    /* boutons Partager */
+    KINDS.forEach(function(k){
+      var b=$('edit-top-'+k[0]+'-btn'); if(!b) return;
+      var s=document.createElement('button'); s.type='button'; s.className='back-btn mx-share-btn'; s.textContent='Partager mon top';
+      s.addEventListener('click',function(){ openShare(k[0]); });
+      b.parentNode.insertBefore(s,b.nextSibling);
+    });
+  })();
+  var _op=openProfile;
+  openProfile=function(){ _op.apply(this,arguments); if(me()){ ['op','ed','ost'].forEach(function(k){ renderTopList(k); }); } };
+
+  /* ================= IMAGE À PARTAGER ================= */
+  function loadImg(url){
+    return new Promise(function(res){
+      if(!url) return res(null);
+      var im=new Image(); var done=false;
+      var t=setTimeout(function(){ if(!done){done=true;res(null);} },4500);
+      im.crossOrigin='anonymous';
+      im.onload=function(){ if(!done){done=true;clearTimeout(t);res(im);} };
+      im.onerror=function(){ if(!done){done=true;clearTimeout(t);res(null);} };
+      im.src=url;
+    });
+  }
+  function fit(ctx,text,maxW){ if(ctx.measureText(text).width<=maxW) return text; while(text.length>1 && ctx.measureText(text+'…').width>maxW) text=text.slice(0,-1); return text.trim()+'…'; }
+  function topItems(kind){
+    var u=me(); var keys=(u&&u[topFieldFor(kind)])||[];
+    return keys.map(resolveTopKey).filter(Boolean).slice(0,10);
+  }
+  async function makeImage(kind){
+    var items=topItems(kind), u=me();
+    try{ await Promise.all([document.fonts.load("80px 'Archivo Black'"),document.fonts.load("700 30px Inter"),document.fonts.load("22px 'IBM Plex Mono'")]); }catch(e){}
+    var W=1080,H=1350,c=document.createElement('canvas'); c.width=W; c.height=H; var x=c.getContext('2d');
+    x.fillStyle='#0a0a0a'; x.fillRect(0,0,W,H);
+    x.fillStyle='rgba(255,255,255,0.045)';
+    for(var i=0;i<40;i++){ var a=Math.PI+(i/39)*Math.PI, w=0.018; x.beginPath(); x.moveTo(W/2,H*1.18); x.lineTo(W/2+Math.cos(a-w)*2400,H*1.18+Math.sin(a-w)*2400); x.lineTo(W/2+Math.cos(a+w)*2400,H*1.18+Math.sin(a+w)*2400); x.closePath(); if(i%2===0) x.fill(); }
+    x.fillStyle='#fff'; x.fillRect(72,64,40,40);
+    x.font="44px 'Archivo Black', Poppins, sans-serif"; x.textBaseline='alphabetic'; x.fillText('ANIMEDEX',130,102);
+    x.font="26px 'IBM Plex Mono', monospace"; if('letterSpacing' in x) x.letterSpacing='5px';
+    var tag='TOP 10 · '+KLAB[kind]; var tw=x.measureText(tag).width;
+    x.strokeStyle='#fff'; x.lineWidth=3; x.strokeRect(72,140,tw+40,52); x.fillText(tag,92,176);
+    if('letterSpacing' in x) x.letterSpacing='0px';
+    x.font="104px 'Archivo Black', Poppins, sans-serif"; x.fillText('MON TOP 10',72,330);
+    x.font="500 28px 'IBM Plex Mono', monospace"; x.fillStyle='#bbb'; if('letterSpacing' in x) x.letterSpacing='4px';
+    x.fillText(('PAR '+(u?u.name:'')).toUpperCase().slice(0,34),72,378); if('letterSpacing' in x) x.letterSpacing='0px';
+    var imgs=await Promise.all(items.map(function(it){return loadImg(it.image);}));
+    var y0=412, rh=82;
+    items.forEach(function(it,i){
+      var y=y0+i*rh;
+      x.fillStyle='rgba(255,255,255,0.14)'; x.fillRect(72,y+rh-2,W-144,2);
+      x.fillStyle='#fff'; x.font="44px 'Archivo Black', Poppins, sans-serif"; x.textAlign='right'; x.fillText(String(i+1),132,y+54); x.textAlign='left';
+      var tx=158;
+      if(imgs[i]){ var im=imgs[i], th=66, tw2=50; x.save(); x.beginPath(); x.rect(tx,y+8,tw2,th); x.clip();
+        var sc=Math.max(tw2/im.width,th/im.height); var dw=im.width*sc, dh=im.height*sc; x.drawImage(im,tx+(tw2-dw)/2,y+8+(th-dh)*0.1,dw,dh); x.restore();
+        x.strokeStyle='#fff'; x.lineWidth=2; x.strokeRect(tx,y+8,tw2,th); tx+=tw2+22; }
+      else { x.strokeStyle='#fff'; x.lineWidth=2; x.strokeRect(tx,y+8,50,66); x.font="26px 'Archivo Black', sans-serif"; x.fillText((it.title||'?')[0].toUpperCase(),tx+16,y+50); tx+=72; }
+      var mw=W-72-tx;
+      x.fillStyle='#fff'; x.font="700 32px Inter, Poppins, sans-serif"; x.fillText(fit(x,it.title,mw),tx,y+38);
+      x.fillStyle='#9a9a9a'; x.font="20px 'IBM Plex Mono', monospace"; x.fillText(fit(x,String(it.sub||'').toUpperCase(),mw),tx,y+66);
+    });
+    if(!items.length){ x.fillStyle='#aaa'; x.font="30px Inter, sans-serif"; x.fillText('Aucun élément dans ce top pour le moment.',72,520); }
+    x.fillStyle='#ddd'; x.font="24px 'IBM Plex Mono', monospace"; if('letterSpacing' in x) x.letterSpacing='3px';
+    x.fillText('FAIS LE TIEN → LYRIK-ANIME-MANGA.VERCEL.APP',72,H-52);
+    var blob=await new Promise(function(r){ c.toBlob(r,'image/jpeg',0.92); });
+    return {blob:blob,items:items};
+  }
+  function captionFor(kind,items){
+    var u=me();
+    return 'Mon Top 10 '+KLAB[kind].toLowerCase()+' sur ANIMEDEX\n'+items.map(function(it,i){return (i+1)+'. '+it.title+(it.sub&&(kind==='op'||kind==='ed'||kind==='ost'||kind==='character')?' ('+it.sub+')':'');}).join('\n')+'\n\nFais le tien : '+SITE+'\n#anime #manga #animedex';
+  }
+  var shareUrl=null;
+  function ensureShareDom(){
+    if($('mx-share-overlay')) return;
+    var o=document.createElement('div'); o.id='mx-share-overlay';
+    o.innerHTML='<div id="mx-share-box"><button class="x" id="mx-share-x" aria-label="Fermer">✕</button><img id="mx-share-img" alt="Aperçu de ton top 10"><div class="row"><button class="pri" id="mx-share-go">Partager</button><button id="mx-share-dl">Télécharger</button><button id="mx-share-cp">Copier le texte</button></div><p>TikTok et Instagram : télécharge l\'image, puis ajoute-la dans une publication « photos ». Le bouton Partager ouvre directement le menu de ton téléphone.</p></div>';
+    document.body.appendChild(o);
+    o.addEventListener('click',function(e){ if(e.target===o) closeShare(); });
+    $('mx-share-x').addEventListener('click',closeShare);
+  }
+  function closeShare(){ var o=$('mx-share-overlay'); if(o) o.classList.remove('show'); if(shareUrl){ URL.revokeObjectURL(shareUrl); shareUrl=null; } }
+  async function openShare(kind){
+    if(!me()){ openAuthModal(); return; }
+    ensureShareDom();
+    var items=topItems(kind);
+    if(!items.length){ alert('Ton top est vide : clique sur « Modifier mon Top 10 » pour le remplir.'); return; }
+    var o=$('mx-share-overlay'); o.classList.add('show'); $('mx-share-img').removeAttribute('src');
+    var r=await makeImage(kind); shareUrl=URL.createObjectURL(r.blob); $('mx-share-img').src=shareUrl;
+    var cap=captionFor(kind,r.items), file=null, fname='mon-top-'+kind+'-animedex.jpg';
+    try{ file=new File([r.blob],fname,{type:'image/jpeg'}); }catch(e){}
+    $('mx-share-go').onclick=async function(){
+      try{
+        if(file && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:cap,title:'Mon top ANIMEDEX'}); return; }
+        if(navigator.share){ await navigator.share({text:cap,url:SITE,title:'Mon top ANIMEDEX'}); return; }
+      }catch(e){ if(e&&e.name==='AbortError') return; }
+      $('mx-share-dl').click();
+    };
+    $('mx-share-dl').onclick=function(){ var a=document.createElement('a'); a.href=shareUrl; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); };
+    $('mx-share-cp').onclick=function(){ var b=$('mx-share-cp'); var done=function(){ b.textContent='Copié ✓'; setTimeout(function(){ b.textContent='Copier le texte'; },1800); };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(cap).then(done,done); else done(); };
+  }
+
+  /* ================= COMMUNAUTÉ : vue, onglets ================= */
+  var main=document.querySelector('main'); if(!main) return;
+  var sec=document.createElement('section'); sec.className='view'; sec.id='view-community';
+  sec.innerHTML='<button class="back-btn" id="cm-back">← Retour</button>'+
+   '<div class="hero"><span class="tag">Communauté</span><h2>Discute avec les fans</h2><p>Un chat commun pour parler anime, manga et musique, et le classement des tops de tous les membres.</p></div>'+
+   '<div class="cm-tabs chips-row" id="cm-tabs"><button class="chip active" data-t="chat">Chat</button><button class="chip" data-t="rank">Classements</button></div>'+
+   '<div id="cm-chat"><div class="cm-rooms chips-row" id="cm-rooms"></div><div class="cm-box"><div class="cm-msgs" id="cm-msgs"></div><div id="cm-foot"></div></div>'+
+   '<p class="cm-note">Reste respectueux : les insultes sont masquées et tu peux signaler un message. Il faut un compte pour écrire.</p><div id="cm-admin" class="cm-admin" style="display:none"><h4>Modération — signalements</h4><div id="cm-reports"></div></div></div>'+
+   '<div id="cm-rank" style="display:none"><div class="chips-row" id="cm-kinds" style="margin-bottom:12px"></div><div id="cm-rank-list"></div><p class="cm-note">10 points pour la 1re place d\'un top, 1 point pour la 10e, additionnés sur tous les membres.</p></div>';
+  main.appendChild(sec);
+  $('cm-back').addEventListener('click',function(){ switchView('anime'); });
+
+  /* navigation : desktop + mobile (panneau) + barre d'onglets */
+  (function(){
+    var nav=$('main-nav'); if(nav){ var b=document.createElement('button'); b.className='nav-btn'; b.dataset.view='community'; b.textContent='Communauté'; b.addEventListener('click',function(){ switchView('community'); }); nav.appendChild(b); }
+    var mp=$('mobile-nav-panel'); if(mp){ var m=document.createElement('button'); m.className='mobile-nav-btn'; m.dataset.view='community'; m.textContent='Communauté'; m.addEventListener('click',function(){ switchView('community'); mp.classList.remove('show'); }); mp.appendChild(m); }
+    var tb=$('mx-tabbar'); if(tb){ var t=document.createElement('button'); t.type='button'; t.dataset.t='community'; t.innerHTML='<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>Social'; var pr=tb.querySelector('[data-t="profile"]'); tb.insertBefore(t,pr); }
+  })();
+
+  var tab='chat', room='general', kind='anime', unsubChat=null, unsubRep=null, unsubBl=null, msgs=[], blocked={}, lastSend=0, active=false;
+
+  function renderTabs(){
+    $('cm-tabs').querySelectorAll('.chip').forEach(function(c){ c.classList.toggle('active',c.dataset.t===tab); });
+    $('cm-chat').style.display=tab==='chat'?'':'none'; $('cm-rank').style.display=tab==='rank'?'':'none';
+  }
+  $('cm-tabs').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c) return; tab=c.dataset.t; renderTabs(); if(tab==='rank') renderRank(); else startChat(); });
+
+  /* ---- filtre de gros mots ---- */
+  var BAD={connard:1,connasse:1,salope:1,pute:1,encule:1,enculer:1,enculee:1,fdp:1,ntm:1,batard:1,negro:1,nigger:1,nigga:1,pedale:1,tarlouze:1,fils2pute:1};
+  function clean(txt){
+    return String(txt).split(/(\s+)/).map(function(w){
+      var n=w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a').replace(/@/g,'a').replace(/\$/g,'s').replace(/[^a-z]/g,'');
+      return (n && BAD[n]) ? w.charAt(0)+new Array(Math.max(1,w.length)).join('*') : w;
+    }).join('');
+  }
+
+  /* ---- chat ---- */
+  function renderRooms(){
+    $('cm-rooms').innerHTML=ROOMS.map(function(r){ return '<button class="chip'+(r[0]===room?' active':'')+'" data-r="'+r[0]+'">'+r[1]+'</button>'; }).join('');
+  }
+  $('cm-rooms').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c||c.dataset.r===room) return; room=c.dataset.r; renderRooms(); startChat(); });
+  function renderFoot(){
+    var f=$('cm-foot'), u=me();
+    if(!u){ f.innerHTML='<div class="cm-login">Connecte-toi pour écrire dans le chat. <button class="back-btn" id="cm-login" type="button" style="margin-left:8px">Se connecter</button></div>'; $('cm-login').onclick=function(){ openAuthModal(); }; return; }
+    if(blocked[uidOf(u)]){ f.innerHTML='<div class="cm-login">Tu ne peux plus écrire dans le chat.</div>'; return; }
+    if(f.querySelector('form')) return;
+    f.innerHTML='<form class="cm-form" id="cm-form" autocomplete="off"><input id="cm-input" maxlength="500" placeholder="Écris un message…" aria-label="Message"><button type="submit">Envoyer</button></form>';
+    $('cm-form').addEventListener('submit',function(e){ e.preventDefault(); send(); });
+  }
+  function timeStr(ts){ try{ var d=new Date(ts), n=new Date(); var h=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); return d.toDateString()===n.toDateString()?h:d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+h; }catch(e){ return ''; } }
+  function renderMsgs(){
+    var box=$('cm-msgs'), u=me(), mine=u?uidOf(u):null, adm=isAdmin(), admins=adminUid();
+    var near=box.scrollHeight-box.scrollTop-box.clientHeight<80 || !box.children.length;
+    var list=msgs.filter(function(m){ return !blocked[m.uid]; });
+    if(!list.length){ box.innerHTML='<div class="cm-empty">Aucun message ici pour le moment. Lance la discussion !</div>'; return; }
+    box.innerHTML=list.map(function(m){
+      var own=m.uid===mine, ad=admins.indexOf(m.uid)>-1;
+      var acts=''; if(u){ if(own||adm) acts+='<button data-a="del" data-id="'+esc(m.id)+'">Supprimer</button>'; if(!own) acts+='<button data-a="rep" data-id="'+esc(m.id)+'">Signaler</button>'; if(adm&&!own) acts+='<button data-a="blk" data-id="'+esc(m.id)+'">Bloquer</button>'; }
+      return '<div class="cm-msg"><div class="cm-head"><b>'+esc(m.name||'Anonyme')+'</b>'+(ad?'<span class="cm-badge">Admin</span>':'')+'<span>'+timeStr(m.ts)+'</span><span class="cm-act">'+acts+'</span></div><div class="cm-text">'+esc(clean(m.text||''))+'</div></div>';
+    }).join('');
+    if(near) box.scrollTop=box.scrollHeight;
+  }
+  $('cm-msgs').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-a]'); if(!b) return; var id=b.dataset.id, a=b.dataset.a, m=msgs.filter(function(x){return x.id===id;})[0]; if(!m) return;
+    if(a==='del'){ if(b.dataset.sure!=='1'){ b.dataset.sure='1'; b.textContent='Confirmer ?'; setTimeout(function(){ if(b.isConnected){ b.dataset.sure='0'; b.textContent='Supprimer'; } },3000); return; } window.fbChatDelete(room,id); }
+    if(a==='rep'){ b.disabled=true; b.textContent='Signalé ✓'; window.fbChatReport({room:room,msgId:id,text:String(m.text||'').slice(0,500),author:m.name||'',authorUid:m.uid||'',by:me()?me().name:'',ts:Date.now()}); }
+    if(a==='blk'){ if(b.dataset.sure!=='1'){ b.dataset.sure='1'; b.textContent='Confirmer ?'; setTimeout(function(){ if(b.isConnected){ b.dataset.sure='0'; b.textContent='Bloquer'; } },3000); return; } blockUid(m.uid); }
+  });
+  function blockUid(uid){ var l=Object.keys(blocked); if(l.indexOf(uid)<0) l.push(uid); window.fbSetRoom('blocked',{uids:l},'chat_meta'); }
+  function send(){
+    var u=me(); if(!u){ openAuthModal(); return; }
+    var inp=$('cm-input'), t=inp.value.replace(/\s+/g,' ').trim(); if(!t) return;
+    if(blocked[uidOf(u)]) return;
+    if(Date.now()-lastSend<2000) return; lastSend=Date.now();
+    inp.value='';
+    window.fbChatSend(room,{uid:uidOf(u),name:String(u.name||'Anonyme').slice(0,30),text:clean(t).slice(0,500),ts:Date.now()}).catch(function(){ inp.value=t; showErr('Message non envoyé (connexion ou règles Firebase).'); });
+  }
+  function showErr(t){ $('cm-msgs').insertAdjacentHTML('beforeend','<div class="cm-empty">'+esc(t)+'</div>'); }
+  function stopChat(){ if(unsubChat){ unsubChat(); unsubChat=null; } if(unsubRep){ unsubRep(); unsubRep=null; } if(unsubBl){ unsubBl(); unsubBl=null; } }
+  function startChat(){
+    stopChat(); renderRooms(); renderFoot(); msgs=[]; $('cm-msgs').innerHTML='<div class="cm-empty">Chargement…</div>';
+    whenFB(function(){
+      if(!active||tab!=='chat') return;
+      unsubBl=window.fbListenRoom('blocked',function(d){ blocked={}; ((d&&d.uids)||[]).forEach(function(x){ blocked[x]=1; }); renderFoot(); renderMsgs(); },'chat_meta');
+      unsubChat=window.fbChatListen(room,function(list){ msgs=list; renderMsgs(); },function(){ $('cm-msgs').innerHTML='<div class="cm-empty">Chat indisponible pour le moment (règles Firebase à activer, voir le guide).</div>'; });
+      var adm=isAdmin(); $('cm-admin').style.display=adm?'':'none';
+      if(adm) unsubRep=window.fbChatListenReports(renderReports);
+    });
+  }
+  function renderReports(list){
+    var box=$('cm-reports'); if(!list.length){ box.innerHTML='<div class="cm-empty" style="padding:10px">Aucun signalement.</div>'; return; }
+    box.innerHTML=list.map(function(r){ return '<div class="cm-rep" data-id="'+esc(r.id)+'"><small>Salon '+esc(r.room)+' · auteur '+esc(r.author)+' · signalé par '+esc(r.by)+'</small>'+esc(r.text)+'<br><button data-a="rdel">Supprimer le message</button><button data-a="rblk">Bloquer l\'auteur</button><button data-a="rign">Ignorer</button></div>'; }).join('');
+    box.querySelectorAll('.cm-rep').forEach(function(el){ var r=list.filter(function(x){return x.id===el.dataset.id;})[0];
+      el.querySelector('[data-a="rdel"]').onclick=function(){ window.fbChatDelete(r.room,r.msgId); window.fbChatDeleteReport(r.id); };
+      el.querySelector('[data-a="rblk"]').onclick=function(){ blockUid(r.authorUid); window.fbChatDeleteReport(r.id); };
+      el.querySelector('[data-a="rign"]').onclick=function(){ window.fbChatDeleteReport(r.id); };
+    });
+  }
+
+  /* ---- classements ---- */
+  var FIELD={anime:'topAnime',manga:'topManga',character:'topCharacters',op:'topOp',ed:'topEd',ost:'topOst'};
+  function renderRank(){
+    $('cm-kinds').innerHTML=KINDS.map(function(k){ return '<button class="chip'+(k[0]===kind?' active':'')+'" data-k="'+k[0]+'">'+k[1]+'</button>'; }).join('');
+    var pts={},cnt={}; Object.keys(accounts||{}).forEach(function(em){ var a=accounts[em]; ((a&&a[FIELD[kind]])||[]).slice(0,10).forEach(function(k,i){ pts[k]=(pts[k]||0)+10-i; cnt[k]=(cnt[k]||0)+1; }); });
+    var rows=Object.keys(pts).sort(function(a,b){ return pts[b]-pts[a]||cnt[b]-cnt[a]; }).map(function(k){ var r=resolveTopKey(k); return r?{r:r,p:pts[k],c:cnt[k]}:null; }).filter(Boolean).slice(0,20);
+    $('cm-rank-list').innerHTML=rows.length?rows.map(function(x,i){ return '<div class="cm-rank-row" data-i="'+i+'"><div class="cm-rank-n">'+(i+1)+'</div><div class="cm-rank-img" style="'+(x.r.image?'background-image:url(\''+esc(x.r.image)+'\')':'')+'"></div><div><div class="cm-rank-t">'+esc(x.r.title)+'</div><div class="cm-rank-s">'+esc(x.r.sub||'')+'</div></div><div class="cm-rank-p"><b>'+x.p+' pts</b>'+x.c+' vote'+(x.c>1?'s':'')+'</div></div>'; }).join(''):'<div class="cm-empty">Personne n\'a encore fait son top ici. Va dans ton profil, « Modifier mon Top 10 », et sois le premier !</div>';
+    $('cm-rank-list').querySelectorAll('.cm-rank-row').forEach(function(el){ el.onclick=function(){ rows[+el.dataset.i].r.onClick(); }; });
+  }
+  $('cm-kinds').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c) return; kind=c.dataset.k; renderRank(); });
+
+  /* activation de la vue */
+  new MutationObserver(function(){
+    var on=sec.classList.contains('active');
+    if(on&&!active){ active=true; renderTabs(); if(tab==='rank') renderRank(); else startChat(); }
+    if(!on&&active){ active=false; stopChat(); }
+  }).observe(sec,{attributes:true,attributeFilter:['class']});
+  /* connexion / déconnexion pendant que la vue est ouverte */
+  var lastU=null; setInterval(function(){ var u=me()&&me().email||null; if(u!==lastU){ lastU=u; if(active&&tab==='chat'){ var f=$('cm-foot'); if(f) f.innerHTML=''; renderFoot(); renderMsgs(); if(isAdmin()&&!unsubRep) startChat(); } } },1200);
+})();
+</script>
+
 </body>
 </html>
