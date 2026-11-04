@@ -23,6 +23,13 @@ et AJOUTE seulement les blocs "chat_..." ci-dessous à l'intérieur de
     match /chat_meta/{id} {
       allow read, write: if true;
     }
+    // --- Amis (v13) ---
+    match /social_inbox/{id} {
+      allow read, create, delete: if true;
+    }
+    match /social_friends/{uid} {
+      allow read, write: if true;
+    }
 
 LIMITES À CONNAÎTRE
 - Le site n'utilise pas Firebase Authentication : les comptes sont gérés dans le navigateur.

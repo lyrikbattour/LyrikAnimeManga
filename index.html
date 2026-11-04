@@ -24,7 +24,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit
+    getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit, where
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import { getAnalytics, logEvent, isSupported } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
 
@@ -102,6 +102,13 @@
     list.sort((a, b) => (b.ts || 0) - (a.ts || 0)); cb(list);
   }, () => cb([]));
   window.fbChatDeleteReport = (id) => deleteDoc(doc(db, 'chat_reports', id));
+
+  // ---- Amis / messages ----
+  window.fbSocialSend = (data) => addDoc(collection(db, 'social_inbox'), data);
+  window.fbSocialListen = (uid, cb) => onSnapshot(query(collection(db, 'social_inbox'), where('to', '==', uid)), (snap) => {
+    const list = []; snap.forEach(d => list.push(Object.assign({ id: d.id }, d.data()))); cb(list);
+  }, () => cb([]));
+  window.fbSocialDelete = (id) => deleteDoc(doc(db, 'social_inbox', id));
 
   window.fbReady = true;
   window.dispatchEvent(new Event('firebase-ready'));
@@ -6727,7 +6734,7 @@ header .brand .sub{display:none;}
   function closeShare(){ var o=$('mx-share-overlay'); if(o) o.classList.remove('show'); if(shareUrl){ URL.revokeObjectURL(shareUrl); shareUrl=null; } }
   async function openShare(kind){
     if(!me()){ openAuthModal(); return; }
-    ensureShareDom();
+    ensureShareDom(); window.__mxShareKind=kind;
     var items=topItems(kind);
     if(!items.length){ alert('Ton top est vide : clique sur « Modifier mon Top 10 » pour le remplir.'); return; }
     var o=$('mx-share-overlay'); o.classList.add('show'); $('mx-share-img').removeAttribute('src');
@@ -6751,10 +6758,10 @@ header .brand .sub{display:none;}
   var sec=document.createElement('section'); sec.className='view'; sec.id='view-community';
   sec.innerHTML='<button class="back-btn" id="cm-back">← Retour</button>'+
    '<div class="hero"><span class="tag">Communauté</span><h2>Discute avec les fans</h2><p>Un chat commun pour parler anime, manga et musique, et le classement des tops de tous les membres.</p></div>'+
-   '<div class="cm-tabs chips-row" id="cm-tabs"><button class="chip active" data-t="chat">Chat</button><button class="chip" data-t="rank">Classements</button></div>'+
+   '<div class="cm-tabs chips-row" id="cm-tabs"><button class="chip active" data-t="chat">Chat</button><button class="chip" data-t="rank">Classements</button><button class="chip" data-t="friends">Amis</button></div>'+
    '<div id="cm-chat"><div class="cm-rooms chips-row" id="cm-rooms"></div><div class="cm-box"><div class="cm-msgs" id="cm-msgs"></div><div id="cm-foot"></div></div>'+
    '<p class="cm-note">Reste respectueux : les insultes sont masquées et tu peux signaler un message. Il faut un compte pour écrire.</p><div id="cm-admin" class="cm-admin" style="display:none"><h4>Modération — signalements</h4><div id="cm-reports"></div></div></div>'+
-   '<div id="cm-rank" style="display:none"><div class="chips-row" id="cm-kinds" style="margin-bottom:12px"></div><div id="cm-rank-list"></div><p class="cm-note">10 points pour la 1re place d\'un top, 1 point pour la 10e, additionnés sur tous les membres.</p></div>';
+   '<div id="cm-friends" style="display:none"></div><div id="cm-rank" style="display:none"><div class="chips-row" id="cm-kinds" style="margin-bottom:12px"></div><div id="cm-rank-list"></div><p class="cm-note">10 points pour la 1re place d\'un top, 1 point pour la 10e, additionnés sur tous les membres.</p></div>';
   main.appendChild(sec);
   $('cm-back').addEventListener('click',function(){ switchView('anime'); });
 
@@ -6769,9 +6776,9 @@ header .brand .sub{display:none;}
 
   function renderTabs(){
     $('cm-tabs').querySelectorAll('.chip').forEach(function(c){ c.classList.toggle('active',c.dataset.t===tab); });
-    $('cm-chat').style.display=tab==='chat'?'':'none'; $('cm-rank').style.display=tab==='rank'?'':'none';
+    $('cm-chat').style.display=tab==='chat'?'':'none'; $('cm-rank').style.display=tab==='rank'?'':'none'; $('cm-friends').style.display=tab==='friends'?'':'none';
   }
-  $('cm-tabs').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c) return; tab=c.dataset.t; renderTabs(); if(tab==='rank') renderRank(); else startChat(); });
+  $('cm-tabs').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c) return; tab=c.dataset.t; renderTabs(); if(tab==='rank'){ stopChat(); renderRank(); } else if(tab==='friends'){ stopChat(); if(window.mxFriendsOpen) window.mxFriendsOpen(); } else startChat(); });
 
   /* ---- filtre de gros mots ---- */
   var BAD={connard:1,connasse:1,salope:1,pute:1,encule:1,enculer:1,enculee:1,fdp:1,ntm:1,batard:1,negro:1,nigger:1,nigga:1,pedale:1,tarlouze:1,fils2pute:1};
@@ -6859,7 +6866,7 @@ header .brand .sub{display:none;}
   /* activation de la vue */
   new MutationObserver(function(){
     var on=sec.classList.contains('active');
-    if(on&&!active){ active=true; renderTabs(); if(tab==='rank') renderRank(); else startChat(); }
+    if(on&&!active){ active=true; renderTabs(); if(tab==='rank') renderRank(); else if(tab==='friends'){ if(window.mxFriendsOpen) window.mxFriendsOpen(); } else startChat(); }
     if(!on&&active){ active=false; stopChat(); }
   }).observe(sec,{attributes:true,attributeFilter:['class']});
   /* connexion / déconnexion pendant que la vue est ouverte */
@@ -7033,6 +7040,7 @@ html.mx-has-wall header{background:color-mix(in srgb,var(--bg) 88%,transparent);
     b.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.9 1.5-1.9-.3-1 .3-2.1 1.4-2.1H17a4 4 0 0 0 4-4c0-5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg>';
     b.onclick=open; var th=$('mx-theme'); hr.insertBefore(b, th||$('auth-area')||hr.firstChild); }
 
+  window.mxCust={get S(){return S;},save:save,apply:apply,paint:paint,showToast:showToast,osNotify:osNotify};
   /* ---------- notifications : annonces + chat ---------- */
   function whenFB(fn){ if(window.fbReady) fn(); else window.addEventListener('firebase-ready',fn,{once:true}); }
   function me(){ return (typeof currentUser!=='undefined')?currentUser:null; }
@@ -7082,6 +7090,1503 @@ html.mx-has-wall header{background:color-mix(in srgb,var(--bg) 88%,transparent);
     f.addEventListener('submit',function(e){ e.preventDefault(); if(!isAdmin()) return; var i=$('cm-ann-in'), t=i.value.trim(); if(!t) return; whenFB(function(){ window.fbSetRoom('announce',{text:t.slice(0,200),ts:Date.now(),by:me().name||''},'chat_meta').then(function(){ i.value=''; showToast('Annonce envoyée','Elle s\'affichera chez tous les visiteurs.'); }).catch(function(){ showToast('Échec','Annonce non envoyée (règles Firebase).'); }); });
     });
   }
+})();
+</script>
+
+<style id="mx-v13-css">
+html.mx-peek header,html.mx-peek main,html.mx-peek #mx-tabbar,html.mx-peek #mx-top,html.mx-peek #mx-jump,html.mx-peek #mx-ann,html.mx-peek #mx-sheet,html.mx-peek #mx-toast{display:none !important;}
+#mx-peek-bar{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:500; display:none; gap:12px; align-items:center; background:var(--bg); color:var(--ink); border:2px solid var(--ink); padding:8px 12px; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:1px; max-width:94vw;}
+html.mx-peek #mx-peek-bar{display:flex;}
+#mx-peek-bar input{width:110px; accent-color:var(--accent);}
+#mx-peek-bar button{border:2px solid var(--ink); background:var(--ink); color:var(--bg); padding:7px 10px; font:inherit; cursor:pointer;}
+.mxc-px{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;}
+.mxc-px button{aspect-ratio:3/4; border:2px solid var(--ink); background-size:cover; background-position:center; cursor:pointer; padding:0;}
+.mxc-px.land button{aspect-ratio:16/10;}
+/* amis */
+#cm-friends .fr-card{border:2px solid var(--ink); padding:14px; margin-bottom:14px; background:var(--bg);}
+#cm-friends h4{font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-faint); margin:0 0 10px; font-weight:500;}
+.fr-qr{display:flex; gap:16px; flex-wrap:wrap; align-items:center;}
+.fr-qr canvas{width:176px; height:176px; border:2px solid var(--ink); background:#fff; image-rendering:pixelated;}
+.fr-actions{display:flex; gap:8px; flex-wrap:wrap; flex:1; min-width:180px;}
+.fr-actions .back-btn,.fr-card .back-btn{margin:0;}
+.fr-link{width:100%; font-family:var(--mono); font-size:11px; word-break:break-all; color:var(--ink-soft); margin-top:8px;}
+.fr-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line,rgba(0,0,0,.15)); flex-wrap:wrap;}
+.fr-av{width:36px; height:36px; border:2px solid var(--ink); display:flex; align-items:center; justify-content:center; font-family:var(--display,'Archivo Black',sans-serif); background:var(--bg-alt);}
+.fr-name{flex:1; font-weight:600; min-width:80px;}
+.fr-row button,.fr-in button{border:1px solid var(--ink); background:var(--bg); color:var(--ink); padding:6px 10px; font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.8px; cursor:pointer;}
+.fr-row button.pri,.fr-in button.pri{background:var(--ink); color:var(--bg);}
+.fr-in{padding:10px 0; border-bottom:1px solid var(--line,rgba(0,0,0,.15)); display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.fr-in span{flex:1; min-width:160px; font-size:14px;}
+.fr-empty{color:var(--ink-faint); font-size:13px; padding:6px 0;}
+.fr-add{display:flex; gap:8px; margin-top:6px;}
+.fr-add input{flex:1; padding:9px 10px; border:2px solid var(--ink); background:var(--bg); color:var(--ink); font:inherit; min-width:0;}
+#fr-modal{position:fixed; inset:0; z-index:350; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding:16px;}
+#fr-modal.show{display:flex;}
+#fr-box{background:var(--bg); color:var(--ink); border:2px solid var(--ink); width:min(460px,100%); max-height:84vh; overflow:auto; padding:18px;}
+#fr-box h3{margin:0 0 12px; font-family:var(--display,'Archivo Black',sans-serif); font-size:20px;}
+#fr-box .fr-row{cursor:default;}
+#fr-box select,#fr-box input[type=text]{width:100%; padding:9px 10px; border:2px solid var(--ink); background:var(--bg); color:var(--ink); font:inherit; margin-bottom:8px;}
+.mx-send{margin-left:4px; border:1px solid var(--ink); background:var(--bg); color:var(--ink); font-family:var(--mono); font-size:10px; padding:3px 7px; cursor:pointer; text-transform:uppercase; vertical-align:middle;}
+.fr-scan video{width:100%; max-height:50vh; background:#000;}
+</style>
+
+<script id="mx-qr">(function(){var __m={},__c={};function __r(n){n=n.replace(/^\.\//,'');if(__c[n])return __c[n].exports;var m={exports:{}};__c[n]=m;__m[n](m,__r);return m.exports;}
+__m['QRErrorCorrectLevel']=function(module,require){module.exports = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+};
+__m['QRPolynomial']=function(module,require){var QRMath = require('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+module.exports = QRPolynomial;
+
+};
+__m['QRMaskPattern']=function(module,require){module.exports = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+};
+__m['QRMode']=function(module,require){module.exports = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+};
+__m['QRUtil']=function(module,require){var QRMode = require('./QRMode');
+var QRPolynomial = require('./QRPolynomial');
+var QRMath = require('./QRMath');
+var QRMaskPattern = require('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+module.exports = QRUtil;
+
+};
+__m['QRMath']=function(module,require){var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+module.exports = QRMath;
+
+};
+__m['QR8bitByte']=function(module,require){var QRMode = require('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+module.exports = QR8bitByte;
+
+};
+__m['index']=function(module,require){//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = require('./QR8bitByte');
+var QRUtil = require('./QRUtil');
+var QRPolynomial = require('./QRPolynomial');
+var QRRSBlock = require('./QRRSBlock');
+var QRBitBuffer = require('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+module.exports = QRCode;
+
+};
+__m['QRBitBuffer']=function(module,require){function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+module.exports = QRBitBuffer;
+
+};
+__m['QRRSBlock']=function(module,require){var QRErrorCorrectLevel = require('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+module.exports = QRRSBlock;
+
+};
+var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q=new QRC(-1,EC.M);q.addData(t);q.make();return q.modules;};})();</script>
+<script id="mx-v13-js">
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var esc=function(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+  var SITE='https://lyrik-anime-manga.vercel.app';
+  var PIXABAY_KEY=''; /* <-- colle ici ta clé API Pixabay (gratuite) */
+  var C=window.mxCust||{};
+  function toast(t,x,f){ if(C.showToast) C.showToast(t,x,f); }
+
+  /* =============== APERÇU DU FOND =============== */
+  var pb=document.createElement('div'); pb.id='mx-peek-bar'; pb.innerHTML='<span>Voile</span><input type="range" id="mx-peek-wv" min="0" max="90"><button type="button" id="mx-peek-x">Quitter l\'aperçu</button>'; document.body.appendChild(pb);
+  function peek(on){ document.documentElement.classList.toggle('mx-peek',on); if(on&&C.S){ $('mx-peek-wv').value=C.S.wv; } }
+  $('mx-peek-x').onclick=function(){ peek(false); var o=$('mx-cust-overlay'); if(o) o.classList.add('show'); };
+  $('mx-peek-wv').oninput=function(){ if(!C.S) return; C.S.wv=+this.value; C.save(); C.apply(); };
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.documentElement.classList.contains('mx-peek')) $('mx-peek-x').click(); });
+  var box=$('mx-cust-box');
+  if(box){
+    var rows=box.querySelectorAll('.mxc-row'), last=rows[rows.length-1];
+    var pr=document.createElement('div'); pr.className='mxc-row'; pr.innerHTML='<button class="back-btn" id="mxc-peek" type="button">Aperçu du fond (cache tout le reste)</button>';
+    last.parentNode.insertBefore(pr,last);
+    $('mxc-peek').onclick=function(){ $('mx-cust-overlay').classList.remove('show'); peek(true); };
+    /* Pixabay */
+    var ai=$('mxc-ainote'), px=document.createElement('div');
+    px.innerHTML='<h4>Chercher dans Pixabay</h4><div class="mxc-row" style="margin-top:0"><input type="text" id="mxc-pxq" placeholder="Ex : anime sakura, cyberpunk city, fantasy…"><button class="back-btn" id="mxc-pxb" type="button">Chercher</button></div><p class="mxc-note" id="mxc-pxn">Illustrations libres de droits (Pixabay). Touche une image pour l\'utiliser.</p><div class="mxc-px" id="mxc-pxg"></div>';
+    ai.parentNode.insertBefore(px,ai.nextSibling);
+    function pxSearch(){
+      var q=$('mxc-pxq').value.trim()||'anime', n=$('mxc-pxn'), g=$('mxc-pxg');
+      if(!PIXABAY_KEY){ n.textContent='La recherche Pixabay sera active dès que la clé API aura été ajoutée au site.'; return; }
+      var land=window.innerWidth>window.innerHeight;
+      n.textContent='Recherche…'; g.innerHTML=''; g.classList.toggle('land',land);
+      fetch('https://pixabay.com/api/?key='+encodeURIComponent(PIXABAY_KEY)+'&q='+encodeURIComponent(q)+'&image_type=illustration&orientation='+(land?'horizontal':'vertical')+'&safesearch=true&per_page=18').then(function(r){ return r.json(); }).then(function(d){
+        var h=d.hits||[]; if(!h.length){ n.textContent='Aucun résultat. Essaie un autre mot.'; return; }
+        n.innerHTML='Images fournies par <a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a>, licence libre. Touche une image pour l\'utiliser.';
+        g.innerHTML=h.map(function(x,i){ return '<button type="button" data-i="'+i+'" style="background-image:url(\''+esc(x.webformatURL)+'\')" aria-label="Image de '+esc(x.user)+'"></button>'; }).join('');
+        g.onclick=function(e){ var b=e.target.closest('button'); if(!b) return; use(h[+b.dataset.i]); };
+      }).catch(function(){ n.textContent='Pixabay ne répond pas. Réessaie plus tard.'; });
+    }
+    function use(hit){
+      var url=hit.largeImageURL||hit.webformatURL, n=$('mxc-pxn'); n.textContent='Chargement de l\'image…';
+      fetch(url).then(function(r){ return r.blob(); }).then(function(bl){ return new Promise(function(res,rej){ var im=new Image(); im.onload=function(){ res(im); }; im.onerror=rej; im.src=URL.createObjectURL(bl); }); }).then(function(im){
+        var sc=Math.min(1,1600/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*sc); c.height=Math.round(im.height*sc); c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        localStorage.setItem('mx-cust-img',c.toDataURL('image/jpeg',0.8)); C.S.wall='img'; C.save(); C.apply(); C.paint(); n.textContent='Fond appliqué.';
+      }).catch(function(){ C.S.cover=url; C.S.wall='cover'; C.save(); C.apply(); C.paint(); n.textContent='Fond appliqué (lien direct).'; });
+    }
+    $('mxc-pxb').onclick=pxSearch; $('mxc-pxq').addEventListener('keydown',function(e){ if(e.key==='Enter') pxSearch(); });
+  }
+
+  /* =============== AMIS =============== */
+  function me(){ return (typeof currentUser!=='undefined')?currentUser:null; }
+  function uidOf(u){ return 'u'+simpleHash(String(u.email).toLowerCase()); }
+  function nameOfUid(uid,fb){ try{ for(var em in accounts){ if('u'+simpleHash(String(em).toLowerCase())===uid) return accounts[em].name||fb; } }catch(e){} return fb||'Ami'; }
+  function whenFB(fn){ if(window.fbReady) fn(); else window.addEventListener('firebase-ready',fn,{once:true}); }
+  var friends=[], inbox=[], myUid=null, unF=null, unI=null, sent=[];
+  try{ sent=JSON.parse(localStorage.getItem('mx-sent-reqs')||'[]'); }catch(e){}
+  function saveSent(){ try{ localStorage.setItem('mx-sent-reqs',JSON.stringify(sent.slice(-50))); }catch(e){} }
+  var pane=null;
+  function inviteLink(){ var u=me(); return SITE+'/?add='+uidOf(u)+'&n='+encodeURIComponent(u.name||''); }
+  function saveFriends(){ window.fbSetRoom(myUid,{list:friends},'social_friends'); }
+  function addFriend(uid,name){ if(uid===myUid) return; if(friends.some(function(f){return f.uid===uid;})) return; friends.push({uid:uid,name:String(name||'Ami').slice(0,30)}); saveFriends(); }
+  function sendTo(uid,type,payload){ var u=me(); return window.fbSocialSend({to:uid,from:myUid,fromName:String(u.name||'').slice(0,30),type:type,p:payload||null,ts:Date.now()}); }
+  function startSocial(){
+    var u=me(); var nu=u?uidOf(u):null;
+    if(nu===myUid) return;
+    if(unF){unF();unF=null;} if(unI){unI();unI=null;} friends=[]; inbox=[]; myUid=nu; badge(); if(pane&&pane.isConnected) renderPane();
+    if(!nu) return;
+    whenFB(function(){
+      if(myUid!==nu) return;
+      unF=window.fbListenRoom(nu,function(d){ friends=(d&&d.list)||[]; renderPane(); },'social_friends');
+      var first=true, known={};
+      unI=window.fbSocialListen(nu,function(list){
+        list.sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+        list.forEach(function(m){
+          if(m.type==='friend_ok'){ if(sent.indexOf(m.from)>-1){ addFriend(m.from,m.fromName); toast('Nouvel ami',(m.fromName||'Un ami')+' a accepté ton invitation.'); } window.fbSocialDelete(m.id); }
+        });
+        list=list.filter(function(m){return m.type!=='friend_ok';});
+        if(!first) list.forEach(function(m){ if(!known[m.id]) toast(m.type==='friend_req'?'Demande d\'ami':'Nouveau message d\'ami',(m.fromName||'Quelqu\'un')+(m.type==='friend_req'?' veut t\'ajouter.':' t\'a envoyé quelque chose.'),function(){ openFriends(); }); });
+        list.forEach(function(m){ known[m.id]=1; }); first=false;
+        inbox=list; badge(); renderPane();
+      });
+    });
+  }
+  function badge(){
+    var n=inbox.length, b=document.querySelector('.nav-btn[data-view="community"]');
+    if(b){ var d=b.querySelector('.mx-dot'); if(n&&!d) b.insertAdjacentHTML('beforeend','<i class="mx-dot"></i>'); }
+    var t=document.querySelector('#cm-tabs [data-t="friends"]'); if(t) t.textContent='Amis'+(n?' ('+n+')':'');
+  }
+  setInterval(startSocial,1200);
+
+  /* --- ajout depuis un lien / code --- */
+  function parseTarget(t){ t=String(t||'').trim(); var m=t.match(/[?&]add=([A-Za-z0-9_-]+)/); var nm=t.match(/[?&]n=([^&]*)/); if(m) return {uid:m[1],name:nm?decodeURIComponent(nm[1]):''}; if(/^u[A-Za-z0-9_-]{3,}$/.test(t)) return {uid:t,name:''}; return null; }
+  function requestFriend(tg){
+    var u=me(); if(!u){ toast('Connecte-toi','Il faut un compte pour ajouter un ami.'); openAuthModal(); return; }
+    if(tg.uid===myUid){ toast('C\'est ton propre code','Envoie-le à un ami.'); return; }
+    if(friends.some(function(f){return f.uid===tg.uid;})){ toast('Déjà amis','Cette personne est déjà dans ta liste.'); return; }
+    whenFB(function(){ if(sent.indexOf(tg.uid)<0){ sent.push(tg.uid); saveSent(); } sendTo(tg.uid,'friend_req').then(function(){ toast('Demande envoyée','Elle apparaîtra dans l\'onglet Amis de ton ami.'); }).catch(function(){ toast('Échec','Demande non envoyée (règles Firebase).'); }); });
+  }
+  var pending=null; (function(){ try{ var q=new URLSearchParams(location.search); if(q.get('add')){ pending={uid:q.get('add').replace(/[^A-Za-z0-9_-]/g,''),name:q.get('n')||''}; history.replaceState(null,'',location.pathname+location.hash); } }catch(e){} })();
+  if(pending){ var pt=setInterval(function(){ if(me()){ clearInterval(pt); var p=pending; pending=null; var nm=nameOfUid(p.uid,p.name)||'cette personne'; if(window.confirm('Ajouter '+nm+' en ami ?')) requestFriend(p); } },1000); setTimeout(function(){ if(pending&&!me()){ toast('Invitation reçue','Connecte-toi ou crée un compte pour ajouter ton ami.'); openAuthModal(); } },2500); }
+
+  /* --- modale générique --- */
+  var fm=document.createElement('div'); fm.id='fr-modal'; fm.innerHTML='<div id="fr-box"></div>'; document.body.appendChild(fm);
+  fm.addEventListener('click',function(e){ if(e.target===fm) closeM(); });
+  function openM(html){ $('fr-box').innerHTML=html; fm.classList.add('show'); }
+  function closeM(){ fm.classList.remove('show'); stopScan(); }
+  function pickFriend(title,cb){
+    if(!me()){ openAuthModal(); return; }
+    if(!friends.length){ toast('Pas encore d\'ami','Ajoute un ami dans Communauté > Amis.',function(){ openFriends(); }); return; }
+    openM('<h3>'+esc(title)+'</h3>'+friends.map(function(f,i){ return '<div class="fr-row"><div class="fr-av">'+esc((f.name||'?')[0].toUpperCase())+'</div><div class="fr-name">'+esc(f.name)+'</div><button class="pri" data-i="'+i+'">Envoyer</button></div>'; }).join('')+'<div class="fr-row"><button id="fr-cancel">Annuler</button></div>');
+    $('fr-box').onclick=function(e){ if(e.target.id==='fr-cancel'){ closeM(); return; } var b=e.target.closest('button[data-i]'); if(!b) return; closeM(); cb(friends[+b.dataset.i]); };
+  }
+  function doSend(f,type,p,label){ whenFB(function(){ sendTo(f.uid,type,p).then(function(){ toast('Envoyé à '+f.name,label); }).catch(function(){ toast('Échec','Envoi impossible (règles Firebase).'); }); }); }
+  window.mxSendTop=function(kind,keys,title){ pickFriend('Envoyer mon top à…',function(f){ doSend(f,'share',{k:'top',tk:kind,keys:keys.slice(0,10)},title||'Ton top 10 est parti.'); }); };
+  function sendSong(s){ pickFriend('Envoyer « '+s.title+' » à…',function(f){ doSend(f,'share',{k:'song',title:s.title,anime:s.anime,aid:s.aid},'La musique est partie.'); }); }
+
+  /* boutons « Envoyer » sur les musiques + codes de jeu */
+  var NONC=/^(?:)$/;
+  function decorate(root){
+    root.querySelectorAll('.mx-play[data-aid][data-title]').forEach(function(b){
+      if(b.dataset.snd) return; b.dataset.snd='1';
+      var s=document.createElement('button'); s.type='button'; s.className='mx-send'; s.textContent='Envoyer'; s.title='Envoyer à un ami';
+      s.addEventListener('click',function(e){ e.stopPropagation(); sendSong({title:b.dataset.title,anime:b.dataset.anime||'',aid:b.dataset.aid}); });
+      b.parentNode.insertBefore(s,b.nextSibling);
+    });
+  }
+  ['view-detail','view-music'].forEach(function(id){ var v=$(id); if(v){ new MutationObserver(function(){ clearTimeout(v._t); v._t=setTimeout(function(){ decorate(v); },150); }).observe(v,{childList:true,subtree:true}); } });
+  [['imp-on-room-code','imposter'],['auc-on-room-code','auction']].forEach(function(g){
+    var el=$(g[0]); if(!el) return; var b=document.createElement('button'); b.type='button'; b.className='back-btn'; b.style.margin='10px auto 0'; b.style.display='block'; b.textContent='Inviter un ami';
+    b.addEventListener('click',function(){ var code=(el.textContent||'').trim(); if(!code) return; pickFriend('Inviter à la partie…',function(f){ doSend(f,'share',{k:'game',g:g[1],code:code},'Invitation envoyée.'); }); });
+    el.parentNode.insertBefore(b,el.nextSibling);
+  });
+  function joinGame(g,code){
+    switchView(g);
+    var pre=g==='imposter'?['imp-mode-online','imp-on-tab-join','imp-on-join-code','imp-on-join-name']:['auc-mode-online-btn','auc-on-tab-join','auc-on-join-code','auc-on-join-name'];
+    setTimeout(function(){ $(pre[0]).click(); $(pre[1]).click(); $(pre[2]).value=code; var u=me(); if(u&&$(pre[3])) $(pre[3]).value=u.name||''; toast('Code rempli','Appuie sur « Rejoindre » pour entrer dans la partie.'); },200);
+  }
+
+  /* --- panneau Amis --- */
+  function qrCanvas(text){
+    var m=window.mxQR(text), n=m.length, q=4, s=Math.floor(352/(n+2*q)), sz=(n+2*q)*s, c=document.createElement('canvas'); c.width=c.height=sz; var x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,sz,sz); x.fillStyle='#000';
+    for(var r=0;r<n;r++) for(var k=0;k<n;k++) if(m[r][k]) x.fillRect((k+q)*s,(r+q)*s,s,s); return c;
+  }
+  function renderPane(){
+    if(!pane||!pane.isConnected) return;
+    var u=me();
+    if(!u){ pane.innerHTML='<div class="fr-card"><div class="fr-empty">Connecte-toi pour ajouter des amis et leur envoyer des musiques, des tops ou un code de jeu.</div><button class="back-btn" id="fr-login" type="button" style="margin-top:8px">Se connecter</button></div>'; $('fr-login').onclick=function(){ openAuthModal(); return; }; return; }
+    var link=inviteLink(), keep=pane.querySelector('#fr-qrbox');
+    var inH=inbox.length?inbox.map(function(m,i){ var d=''; var from=esc(m.fromName||'Quelqu\'un'), btn='';
+      if(m.type==='friend_req'){ d=from+' veut devenir ton ami.'; btn='<button class="pri" data-a="acc" data-i="'+i+'">Accepter</button><button data-a="no" data-i="'+i+'">Refuser</button>'; }
+      else if(m.p&&m.p.k==='top'){ d=from+' t\'envoie son top 10 ('+esc(m.p.tk)+').'; btn='<button class="pri" data-a="top" data-i="'+i+'">Voir</button><button data-a="no" data-i="'+i+'">Ignorer</button>'; }
+      else if(m.p&&m.p.k==='song'){ d=from+' t\'envoie « '+esc(m.p.title)+' »'+(m.p.anime?' ('+esc(m.p.anime)+')':'')+'.'; btn='<button class="pri" data-a="song" data-i="'+i+'">Ouvrir</button><button data-a="no" data-i="'+i+'">Ignorer</button>'; }
+      else if(m.p&&m.p.k==='game'){ d=from+' t\'invite à jouer ('+(m.p.g==='imposter'?'Imposter':'Enchères')+', code '+esc(m.p.code)+').'; btn='<button class="pri" data-a="game" data-i="'+i+'">Rejoindre</button><button data-a="no" data-i="'+i+'">Ignorer</button>'; }
+      else { d=from+' t\'a écrit.'; btn='<button data-a="no" data-i="'+i+'">Ignorer</button>'; }
+      return '<div class="fr-in"><span>'+d+'</span>'+btn+'</div>'; }).join(''):'<div class="fr-empty">Rien de nouveau.</div>';
+    var frH=friends.length?friends.map(function(f,i){ return '<div class="fr-row"><div class="fr-av">'+esc((f.name||'?')[0].toUpperCase())+'</div><div class="fr-name">'+esc(f.name)+'</div><button class="pri" data-a="send" data-i="'+i+'">Envoyer…</button><button data-a="rm" data-i="'+i+'">Retirer</button></div>'; }).join(''):'<div class="fr-empty">Aucun ami pour l\'instant. Partage ton invitation ci-dessus.</div>';
+    pane.innerHTML='<div class="fr-card"><h4>Reçu</h4>'+inH+'</div>'+
+      '<div class="fr-card"><h4>Mes amis ('+friends.length+')</h4>'+frH+'</div>'+
+      '<div class="fr-card"><h4>Inviter un ami</h4><div class="fr-qr"><div id="fr-qrbox"></div><div class="fr-actions"><button class="back-btn" data-a="share" type="button">Partager l\'invitation</button><button class="back-btn" data-a="copy" type="button">Copier le lien</button><button class="back-btn" data-a="wa" type="button">WhatsApp</button><button class="back-btn" data-a="sms" type="button">SMS</button><button class="back-btn" data-a="dlqr" type="button">Télécharger le QR</button></div></div><div class="fr-link">'+esc(link)+'</div></div>'+
+      '<div class="fr-card"><h4>Ajouter un ami</h4><div class="fr-add"><input id="fr-code" placeholder="Colle le lien ou le code de ton ami"><button class="back-btn" data-a="addc" type="button">Ajouter</button></div><div class="fr-actions" style="margin-top:10px"><button class="back-btn" data-a="scan" type="button">Scanner un QR code</button></div></div>';
+    var qb=pane.querySelector('#fr-qrbox'); try{ qb.appendChild(qrCanvas(link)); }catch(e){}
+  }
+  var stream=null, scanT=null;
+  function stopScan(){ if(scanT){ clearInterval(scanT); scanT=null; } if(stream){ stream.getTracks().forEach(function(t){t.stop();}); stream=null; } }
+  function scan(){
+    if(!('BarcodeDetector' in window)||!navigator.mediaDevices){ toast('Scan indisponible','Ouvre l\'appareil photo du téléphone et vise le QR code : il ouvre directement le site.'); return; }
+    openM('<h3>Scanner un QR code</h3><div class="fr-scan"><video id="fr-vid" playsinline muted></video></div><div class="fr-row"><button id="fr-cancel">Fermer</button></div>');
+    $('fr-box').onclick=function(e){ if(e.target.id==='fr-cancel') closeM(); };
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(s){ stream=s; var v=$('fr-vid'); v.srcObject=s; v.play(); var det=new BarcodeDetector({formats:['qr_code']});
+      scanT=setInterval(function(){ det.detect(v).then(function(r){ if(r&&r[0]){ var tg=parseTarget(r[0].rawValue); if(tg){ closeM(); requestFriend(tg); } } }).catch(function(){}); },500); }).catch(function(){ closeM(); toast('Caméra refusée','Autorise la caméra ou colle le lien de ton ami.'); });
+  }
+  function consume(m){ window.fbSocialDelete(m.id); }
+  function onPane(e){
+    var b=e.target.closest('button[data-a]'); if(!b) return; var a=b.dataset.a, i=+b.dataset.i, u=me(); if(!u) return;
+    var m=inbox[i], f=friends[i], link=inviteLink(), txt='Rejoins-moi sur ANIMEDEX, le site des fans d\'animés et de mangas ! Ajoute-moi en ami : '+link;
+    if(a==='acc'){ addFriend(m.from,m.fromName); sendTo(m.from,'friend_ok'); consume(m); toast('Ami ajouté',(m.fromName||'')+' est dans ta liste.'); }
+    else if(a==='no'){ consume(m); }
+    else if(a==='top'){ var items=(m.p.keys||[]).map(function(k){return resolveTopKey(k);}).filter(Boolean); openM('<h3>Top 10 de '+esc(m.fromName)+'</h3>'+(items.map(function(r,j){ return '<div class="fr-row" data-j="'+j+'" style="cursor:pointer"><div class="fr-av">'+(j+1)+'</div><div class="fr-name">'+esc(r.title)+'<div style="font-weight:400;font-size:12px;color:var(--ink-faint)">'+esc(r.sub||'')+'</div></div></div>'; }).join('')||'<div class="fr-empty">Top vide.</div>')+'<div class="fr-row"><button id="fr-cancel">Fermer</button></div>');
+      $('fr-box').onclick=function(ev){ if(ev.target.id==='fr-cancel'){ closeM(); return; } var r=ev.target.closest('[data-j]'); if(r){ closeM(); items[+r.dataset.j].onClick(); } }; consume(m); }
+    else if(a==='song'){ consume(m); try{ openDetail(m.p.aid,'anime'); }catch(e2){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
+    else if(a==='game'){ consume(m); joinGame(m.p.g==='imposter'?'imposter':'auction',String(m.p.code||'').toUpperCase().slice(0,5)); }
+    else if(a==='send'){ openSend(f); }
+    else if(a==='rm'){ if(window.confirm('Retirer '+f.name+' de tes amis ?')){ friends.splice(i,1); saveFriends(); renderPane(); } }
+    else if(a==='share'){ if(navigator.share){ navigator.share({title:'ANIMEDEX',text:txt,url:link}).catch(function(){}); } else { copy(txt); } }
+    else if(a==='copy'){ copy(link); }
+    else if(a==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank','noopener'); }
+    else if(a==='sms'){ location.href='sms:?&body='+encodeURIComponent(txt); }
+    else if(a==='dlqr'){ var c=pane.querySelector('#fr-qrbox canvas'); if(c){ var l=document.createElement('a'); l.href=c.toDataURL('image/png'); l.download='mon-qr-animedex.png'; document.body.appendChild(l); l.click(); l.remove(); } }
+    else if(a==='addc'){ var tg=parseTarget($('fr-code').value); if(!tg){ toast('Lien non reconnu','Colle le lien ou le code reçu de ton ami.'); return; } $('fr-code').value=''; requestFriend(tg); }
+    else if(a==='scan'){ scan(); }
+  }
+  function copy(t){ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ toast('Copié','Colle-le dans n\'importe quelle appli.'); },function(){ toast('Copie impossible','Sélectionne le lien et copie-le.'); }); else toast('Copie impossible','Sélectionne le lien et copie-le.'); }
+  function openSend(f){
+    var u=me(), games=[['imposter','imp-on-room-code'],['auction','auc-on-room-code']].map(function(g){ var el=$(g[1]); return el&&el.textContent.trim()?{g:g[0],code:el.textContent.trim()}:null; }).filter(Boolean);
+    var kinds=[['anime','Animés','topAnime'],['manga','Mangas','topManga'],['character','Persos','topCharacters'],['op','Openings','topOp'],['ed','Endings','topEd'],['ost','OST','topOst']];
+    openM('<h3>Envoyer à '+esc(f.name)+'</h3><div class="fr-row"><select id="fr-tk" style="margin:0;flex:1">'+kinds.map(function(k){ return '<option value="'+k[0]+'">Mon top 10 '+k[1]+'</option>'; }).join('')+'</select><button class="pri" id="fr-st">Envoyer</button></div>'+
+      '<div style="margin-top:12px"><input type="text" id="fr-sq" placeholder="Chercher une musique (titre ou animé)…"><div id="fr-sr"></div></div>'+
+      (games.length?'<div class="fr-row"><span class="fr-name">Mon code de jeu</span>'+games.map(function(g){ return '<button class="pri" data-g="'+g.g+'" data-c="'+esc(g.code)+'">'+(g.g==='imposter'?'Imposter':'Enchères')+' '+esc(g.code)+'</button>'; }).join('')+'</div>':'')+
+      '<div class="fr-row"><button id="fr-cancel">Fermer</button></div>');
+    var results=[];
+    $('fr-st').onclick=function(){ var k=$('fr-tk').value, fld=kinds.filter(function(x){return x[0]===k;})[0][2], keys=(u[fld]||[]); if(!keys.length){ toast('Top vide','Remplis d\'abord ce top dans ton profil.'); return; } closeM(); doSend(f,'share',{k:'top',tk:k,keys:keys.slice(0,10)},'Ton top est parti.'); };
+    $('fr-sq').addEventListener('input',function(){ var q=this.value.trim().toLowerCase(); if(q.length<2){ $('fr-sr').innerHTML=''; return; } results=[]; ['op','ed','ost'].forEach(function(k){ window.mxSongPool(k).forEach(function(s){ if(results.length<8&&(s.title.toLowerCase().indexOf(q)>-1||(s.sub||'').toLowerCase().indexOf(q)>-1)) results.push(s); }); });
+      $('fr-sr').innerHTML=results.map(function(s,i){ return '<div class="fr-row"><div class="fr-name">'+esc(s.title)+'<div style="font-weight:400;font-size:12px;color:var(--ink-faint)">'+esc(s.sub)+'</div></div><button class="pri" data-s="'+i+'">Envoyer</button></div>'; }).join(''); });
+    $('fr-box').onclick=function(e){ if(e.target.id==='fr-cancel'){ closeM(); return; } var s=e.target.closest('button[data-s]'); if(s){ var r=results[+s.dataset.s]; closeM(); doSend(f,'share',{k:'song',title:r.title,anime:r.sub,aid:r.aid},'La musique est partie.'); return; } var g=e.target.closest('button[data-g]'); if(g){ closeM(); doSend(f,'share',{k:'game',g:g.dataset.g,code:g.dataset.c},'Invitation envoyée.'); } };
+  }
+  function openFriends(){ switchView('community'); setTimeout(function(){ var t=document.querySelector('#cm-tabs [data-t="friends"]'); if(t) t.click(); },250); }
+  window.mxFriendsOpen=function(){ pane=$('cm-friends'); if(pane&&!pane._b){ pane._b=1; pane.addEventListener('click',onPane); } startSocial(); renderPane(); };
+  /* bouton « Envoyer à un ami » dans la fenêtre de partage d'un top */
+  var sb=$('mx-share-box')||null;
+  (function(){ var iv=setInterval(function(){ var row=document.querySelector('#mx-share-box .row'); if(!row) return; clearInterval(iv); var b=document.createElement('button'); b.id='mx-share-fr'; b.textContent='Envoyer à un ami'; row.appendChild(b); b.onclick=function(){ var k=window.__mxShareKind, u=me(); if(!u||!k) return; var fld=({anime:'topAnime',manga:'topManga',character:'topCharacters',op:'topOp',ed:'topEd',ost:'topOst'})[k]; window.mxSendTop(k,u[fld]||[],'Ton top est parti.'); }; },800); })();
+  /* onglet Amis dans Communauté (créé par le script v11) */
+  window.mxFriendsInit=function(){};
 })();
 </script>
 
