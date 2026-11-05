@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "lyrik-anime-manga.vercel.app" }],
+      "destination": "https://animedexfr.fr/$1",
+      "permanent": true
+    }
+  ]
+}

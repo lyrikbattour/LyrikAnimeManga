@@ -657,8 +657,8 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
 @media (max-width:600px){ #mx-search,#mx-daily{padding-top:3vh;} }
 
 </style>
-<link rel="canonical" href="https://lyrik-anime-manga.vercel.app/">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ANIMEDEX","url":"https://lyrik-anime-manga.vercel.app/","inLanguage":"fr","description":"Encyclopédie anime & manga : fiches, personnages, OST, quiz et jeux entre amis."}</script>
+<link rel="canonical" href="https://animedexfr.fr/">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ANIMEDEX","url":"https://animedexfr.fr/","inLanguage":"fr","description":"Encyclopédie anime & manga : fiches, personnages, OST, quiz et jeux entre amis."}</script>
 </head>
 <body>
 
@@ -1506,13 +1506,15 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
       <h2>Politique de confidentialité</h2>
     </div>
     <div class="detail-section legal-text">
-      <p><b>Ce site est un projet fan-made non officiel</b>, à but non lucratif, sans lien avec les ayants droit des œuvres mentionnées.</p>
+      <p><b>Ce site est un projet fan-made non officiel</b>, sans lien avec les ayants droit des œuvres mentionnées. Il peut contenir des liens d'affiliation (voir ci-dessous).</p>
       <div class="section-label">Données collectées</div>
       <p>Si tu crées un compte (email/mot de passe ou connexion Google), les données suivantes sont stockées : ton pseudo, ton adresse email, et — pour les comptes email/mot de passe — une empreinte non réversible de ton mot de passe (pas de vrai chiffrement de niveau professionnel : n'utilise pas un mot de passe que tu utilises ailleurs). Sont également stockés tes favoris, tes notes, tes commentaires, tes Tops 10 et tes scores de quiz, associés à ton compte.</p>
       <div class="section-label">Qui peut voir ces données</div>
       <p>Ce site n'a pas de vrai serveur privé : les données sont stockées dans une base partagée, techniquement accessible à toute personne inspectant le code du site. Ce n'est pas un niveau de sécurité professionnel — c'est un projet personnel.</p>
       <div class="section-label">Cookies et stockage local</div>
       <p>Le site utilise le stockage local de ton navigateur (localStorage) pour te garder connecté d'une visite à l'autre, et pour retenir ton choix concernant cette bannière de cookies. Google (pour la connexion) peut déposer ses propres cookies techniques lors de l'utilisation du bouton de connexion Google. Une fois que tu as accepté la bannière, Google Analytics est activé pour mesurer la fréquentation du site (pages visitées, provenance approximative) — ces données ne sont ni vendues ni partagées avec des tiers en dehors de Google.</p>
+      <div class="section-label">Liens d'affiliation</div>
+      <p>ANIMEDEX participe au Programme Partenaires d'Amazon EU, un programme d'affiliation qui permet au site de percevoir une rémunération en créant des liens vers Amazon.fr. En tant que Partenaire Amazon, je réalise un bénéfice sur les achats remplissant les conditions requises. Cliquer sur ces liens ne te coûte rien de plus. Amazon peut déposer ses propres cookies lorsque tu le visites.</p>
       <div class="section-label">Suppression de tes données</div>
       <p>Pour supprimer ton compte et tes données, contacte l'administrateur du site.</p>
     </div>
@@ -1526,7 +1528,7 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
       <h2>Conditions Générales d'Utilisation</h2>
     </div>
     <div class="detail-section legal-text">
-      <p><b>ANIMEDEX est un projet de démonstration fan-made</b>, non officiel, sans lien avec les studios, éditeurs ou ayants droit des animés et mangas référencés. Les titres, noms et descriptions cités appartiennent à leurs propriétaires respectifs et sont utilisés ici à titre informatif et non commercial.</p>
+      <p><b>ANIMEDEX est un projet de démonstration fan-made</b>, non officiel, sans lien avec les studios, éditeurs ou ayants droit des animés et mangas référencés. Les titres, noms et descriptions cités appartiennent à leurs propriétaires respectifs et sont utilisés ici à titre informatif. Le site peut percevoir une commission via des liens d'affiliation.</p>
       <div class="section-label">Utilisation du site</div>
       <p>Le site est fourni "tel quel", sans garantie de disponibilité, d'exactitude ou de continuité de service. Le contenu (comptes, favoris, commentaires, notes) est stocké sur une base de données partagée sans garantie de sécurité de niveau professionnel.</p>
       <div class="section-label">Comportement attendu</div>
@@ -1613,7 +1615,7 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
 </div>
 
 <div class="cookie-banner" id="cookie-banner">
-  <p>Ce site utilise le stockage local de ton navigateur pour te garder connecté et retenir tes préférences, ainsi qu'un outil de mesure d'audience (Google Analytics) une fois que tu as accepté. Pas de pub, pas de revente de données. <button class="footer-link" id="cookie-banner-privacy-link" style="color:inherit;">En savoir plus</button></p>
+  <p>Ce site utilise le stockage local de ton navigateur pour te garder connecté et retenir tes préférences, ainsi qu'un outil de mesure d'audience (Google Analytics) une fois que tu as accepté. Pas de revente de données. <button class="footer-link" id="cookie-banner-privacy-link" style="color:inherit;">En savoir plus</button></p>
   <div class="cookie-banner-actions">
     <button class="cookie-btn" id="cookie-accept-btn">J'ai compris</button>
   </div>
@@ -6719,7 +6721,7 @@ header .brand .sub{display:none;}
   var ROOMS=[['general','Général'],['anime','Animés'],['manga','Mangas'],['music','OST / OP / ED'],['games','Jeux']];
   var KINDS=[['anime','Animés'],['manga','Mangas'],['character','Persos'],['op','Openings'],['ed','Endings'],['ost','OST']];
   var KLAB={anime:'ANIMÉS',manga:'MANGAS',character:'PERSONNAGES',op:'OPENINGS',ed:'ENDINGS',ost:'OST'};
-  var SITE='https://lyrik-anime-manga.vercel.app';
+  var SITE='https://animedexfr.fr';
   function whenFB(fn){ if(window.fbReady) fn(); else window.addEventListener('firebase-ready',fn,{once:true}); }
   function me(){ return (typeof currentUser!=='undefined')?currentUser:null; }
   function uidOf(u){ return 'u'+simpleHash(String(u.email).toLowerCase()); }
@@ -8489,7 +8491,7 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
 (function(){
   var $=function(id){return document.getElementById(id);};
   var esc=function(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
-  var SITE='https://lyrik-anime-manga.vercel.app';
+  var SITE='https://animedexfr.fr';
   var PIXABAY_KEY='58412808-bbad0d945606888a676944cc3'; /* <-- colle ici ta clé API Pixabay (gratuite) */
   var C=window.mxCust||{};
   function toast(t,x,f){ if(C.showToast) C.showToast(t,x,f); }
@@ -8761,6 +8763,74 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     sec.style.display='';
   }
   var _rf2=renderFavButton; renderFavButton=function(){ _rf2.apply(this,arguments); paintAff(); };
+})();
+
+/* ===== v17 : Conseiller IA (Gemini via /api/ia) ===== */
+(function(){
+  var css=document.createElement('style');
+  css.textContent='.mx-ia-ov{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:40px 14px}.mx-ia-ov.show{display:flex}.mx-ia{background:var(--bg);color:var(--ink);border:2px solid var(--ink);width:100%;max-width:760px;padding:22px}.mx-ia h3{font-size:22px;margin-bottom:6px}.mx-ia p.s{font-size:13px;opacity:.7;margin-bottom:14px}.mx-ia textarea{width:100%;min-height:70px;border:2px solid var(--ink);background:transparent;color:inherit;padding:10px;font:inherit;resize:vertical}.mx-ia .row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}.mx-ia .ex{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.mx-ia .ex button{font-size:12px;padding:5px 9px;border:1px solid var(--ink);background:transparent;color:inherit;cursor:pointer}.mx-ia-res{margin-top:16px;display:grid;gap:12px}.mx-ia-it{display:flex;gap:12px;align-items:center;border:1px solid var(--ink);padding:8px;cursor:pointer}.mx-ia-it img{width:54px;height:76px;object-fit:cover;flex-shrink:0}.mx-ia-it b{display:block}.mx-ia-it span{font-size:13px;opacity:.8}.mx-ia-msg{margin-top:14px;font-size:13px}.mx-ia-note{margin-top:14px;font-size:11px;opacity:.55}';
+  document.head.appendChild(css);
+  var ov=document.createElement('div'); ov.className='mx-ia-ov'; ov.id='mx-ia-ov';
+  ov.innerHTML='<div class="mx-ia" role="dialog" aria-label="Conseiller IA"><h3>✨ Conseiller IA</h3><p class="s">Décris ce que tu cherches, l\'IA choisit dans le catalogue ANIMEDEX.</p><textarea id="mx-ia-q" maxlength="240" placeholder="Ex : un animé triste avec des voyages dans le temps, pas trop long"></textarea><div class="ex" id="mx-ia-ex"></div><div class="row"><button type="button" class="mx-daily-btn" id="mx-ia-go">TROUVER</button><button type="button" class="back-btn" id="mx-ia-close">Fermer</button></div><div class="mx-ia-msg" id="mx-ia-msg"></div><div class="mx-ia-res" id="mx-ia-res"></div><div class="mx-ia-note">Suggestions générées par IA, uniquement parmi les fiches du site. Ta description est envoyée à Google Gemini pour répondre.</div></div>';
+  document.body.appendChild(ov);
+  var q=ov.querySelector('#mx-ia-q'), msg=ov.querySelector('#mx-ia-msg'), res=ov.querySelector('#mx-ia-res'), go=ov.querySelector('#mx-ia-go');
+  ['un animé qui fait pleurer','un manga de combat avec une bonne histoire','quelque chose de court et drôle','un thriller psychologique'].forEach(function(t){
+    var b=document.createElement('button'); b.type='button'; b.textContent=t; b.onclick=function(){ q.value=t; q.focus(); }; ov.querySelector('#mx-ia-ex').appendChild(b);
+  });
+  function close(){ ov.classList.remove('show'); }
+  ov.querySelector('#mx-ia-close').onclick=close; ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
+  var busy=false;
+  go.onclick=function(){
+    var text=q.value.trim(); if(busy) return;
+    if(text.length<3){ msg.textContent='Écris au moins quelques mots.'; return; }
+    busy=true; go.textContent='…'; msg.textContent='L\'IA cherche…'; res.innerHTML='';
+    var map={}, cat=[];
+    ANIME.forEach(function(it){ var k='a:'+it.id; map[k]=['anime',it]; cat.push([k,it.title,(it.genres||[]).join(',')]); });
+    MANGA.forEach(function(it){ var k='m:'+it.id; map[k]=['manga',it]; cat.push([k,it.title,(it.genres||[]).join(',')]); });
+    fetch('/api/ia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q:text,cat:cat})})
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+      .then(function(o){
+        if(!o.ok){ msg.textContent=o.j.error||'IA indisponible.'; return; }
+        var picks=(o.j.picks||[]).filter(function(p){ return map[p.key]; });
+        if(!picks.length){ msg.textContent='Rien de convaincant, reformule ta demande.'; return; }
+        msg.textContent='';
+        picks.forEach(function(p){
+          var t=map[p.key][0], it=map[p.key][1], d=document.createElement('div'); d.className='mx-ia-it';
+          var im=document.createElement('img'); im.src=it.image; im.alt=''; im.loading='lazy'; im.onerror=function(){ im.style.display='none'; };
+          var w=document.createElement('div'), b=document.createElement('b'), s=document.createElement('span');
+          b.textContent=it.title; s.textContent=p.why; w.appendChild(b); w.appendChild(s); d.appendChild(im); d.appendChild(w);
+          d.onclick=function(){ close(); openDetail(it.id,t); };
+          res.appendChild(d);
+        });
+      })
+      .catch(function(){ msg.textContent='Connexion impossible, réessaie.'; })
+      .then(function(){ busy=false; go.textContent='TROUVER'; });
+  };
+  [['#view-anime .hero'],['#view-manga .hero']].forEach(function(p){
+    var hero=document.querySelector(p[0]); if(!hero) return;
+    var b=document.createElement('button'); b.type='button'; b.className='mx-daily-btn mx-rand-btn'; b.textContent='✨ CONSEILLER IA';
+    b.onclick=function(){ ov.classList.add('show'); q.focus(); };
+    hero.appendChild(b);
+  });
+})();
+
+/* ===== v17 : emplacements publicitaires (pages de jeux sans visuels protégés) =====
+   Inactif tant que MX_ADS.client est vide. Une fois AdSense validé :
+   renseigner client ('ca-pub-XXXXXXXXXXXXXXXX') et slot (id du bloc d'annonces). */
+(function(){
+  var MX_ADS={ client:'', slot:'', views:['view-imposter','view-blindtest'] };
+  if(!MX_ADS.client||!MX_ADS.slot) return;
+  var s=document.createElement('script'); s.async=true; s.crossOrigin='anonymous';
+  s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+MX_ADS.client; document.head.appendChild(s);
+  MX_ADS.views.forEach(function(id){
+    var v=document.getElementById(id); if(!v) return;
+    var box=document.createElement('div'); box.className='mx-ad'; box.style.cssText='margin:28px 0;text-align:center;min-height:90px';
+    box.innerHTML='<div style="font-size:10px;opacity:.5;margin-bottom:4px">PUBLICITÉ</div><ins class="adsbygoogle" style="display:block" data-ad-client="'+MX_ADS.client+'" data-ad-slot="'+MX_ADS.slot+'" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+    v.appendChild(box);
+    var done=false, io=new IntersectionObserver(function(en){ if(!done&&en[0].isIntersecting){ done=true; try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} io.disconnect(); } });
+    io.observe(box);
+  });
 })();
 </script>
 
