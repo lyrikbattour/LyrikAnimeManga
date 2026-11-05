@@ -109,6 +109,14 @@
     const list = []; snap.forEach(d => list.push(Object.assign({ id: d.id }, d.data()))); cb(list);
   }, () => cb([]));
   window.fbSocialDelete = (id) => deleteDoc(doc(db, 'social_inbox', id));
+  // ---- Messagerie privée entre amis ----
+  window.fbDmSend = (data) => addDoc(collection(db, 'dm'), data);
+  window.fbDmListenTo = (uid, cb) => onSnapshot(query(collection(db, 'dm'), where('to', '==', uid)), (snap) => {
+    const list = []; snap.forEach(d => list.push(Object.assign({ id: d.id }, d.data()))); cb(list);
+  }, () => cb([]));
+  window.fbDmListenPair = (pair, cb) => onSnapshot(query(collection(db, 'dm'), where('pair', '==', pair)), (snap) => {
+    const list = []; snap.forEach(d => list.push(Object.assign({ id: d.id }, d.data()))); list.sort((a, b) => (a.ts || 0) - (b.ts || 0)); cb(list);
+  }, () => cb([]));
 
   window.fbReady = true;
   window.dispatchEvent(new Event('firebase-ready'));
@@ -1510,6 +1518,8 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
       <p><b>Ce site est un projet fan-made non officiel</b>, sans lien avec les ayants droit des œuvres mentionnées. Il peut contenir des liens d'affiliation (voir ci-dessous).</p>
       <div class="section-label">Données collectées</div>
       <p>Si tu crées un compte (email/mot de passe ou connexion Google), les données suivantes sont stockées : ton pseudo, ton adresse email, et — pour les comptes email/mot de passe — une empreinte non réversible de ton mot de passe (pas de vrai chiffrement de niveau professionnel : n'utilise pas un mot de passe que tu utilises ailleurs). Sont également stockés tes favoris, tes notes, tes commentaires, tes Tops 10 et tes scores de quiz, associés à ton compte.</p>
+      <div class="section-label">Messages entre amis</div>
+      <p>Si tu utilises la messagerie entre amis, tes messages (texte, fiches, musiques, tops partagés) sont stockés dans la base partagée avec ton pseudo. Ils ne sont pas chiffrés : ne partage aucune information sensible. Seuls tes amis acceptés voient leurs messages dans l'application, mais la base n'offre pas de confidentialité de niveau professionnel.</p>
       <div class="section-label">Qui peut voir ces données</div>
       <p>Ce site n'a pas de vrai serveur privé : les données sont stockées dans une base partagée, techniquement accessible à toute personne inspectant le code du site. Ce n'est pas un niveau de sécurité professionnel — c'est un projet personnel.</p>
       <div class="section-label">Cookies et stockage local</div>
@@ -8540,7 +8550,13 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
   function uidOf(u){ return 'u'+simpleHash(String(u.email).toLowerCase()); }
   function nameOfUid(uid,fb){ try{ for(var em in accounts){ if('u'+simpleHash(String(em).toLowerCase())===uid) return accounts[em].name||fb; } }catch(e){} return fb||'Ami'; }
   function whenFB(fn){ if(window.fbReady) fn(); else window.addEventListener('firebase-ready',fn,{once:true}); }
-  var friends=[], inbox=[], myUid=null, unF=null, unI=null, sent=[];
+  var friends=[], inbox=[], myUid=null, unF=null, unI=null, sent=[], dmIn=[], unDm=null, unTh=null, thFriend=null, readTs={}, lastSend=0;
+  try{ readTs=JSON.parse(localStorage.getItem('mx-dm-read')||'{}')||{}; }catch(e){}
+  function saveRead(){ try{ localStorage.setItem('mx-dm-read',JSON.stringify(readTs)); }catch(e){} }
+  function isFriend(uid){ return friends.some(function(f){return f.uid===uid;}); }
+  function unreadFrom(uid){ return dmIn.filter(function(m){ return m.from===uid && (m.ts||0)>(readTs[uid]||0); }).length; }
+  function unreadAll(){ return dmIn.filter(function(m){ return isFriend(m.from) && (m.ts||0)>(readTs[m.from]||0); }).length; }
+  function pairOf(a,b){ return [a,b].sort().join('_'); }
   try{ sent=JSON.parse(localStorage.getItem('mx-sent-reqs')||'[]'); }catch(e){}
   function saveSent(){ try{ localStorage.setItem('mx-sent-reqs',JSON.stringify(sent.slice(-50))); }catch(e){} }
   var pane=null;
@@ -8551,11 +8567,19 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
   function startSocial(){
     var u=me(); var nu=u?uidOf(u):null;
     if(nu===myUid) return;
-    if(unF){unF();unF=null;} if(unI){unI();unI=null;} friends=[]; inbox=[]; myUid=nu; badge(); if(pane&&pane.isConnected) renderPane();
+    if(unF){unF();unF=null;} if(unI){unI();unI=null;} if(unDm){unDm();unDm=null;} if(unTh){unTh();unTh=null;} thFriend=null; friends=[]; inbox=[]; dmIn=[]; myUid=nu; badge(); if(pane&&pane.isConnected) renderPane();
     if(!nu) return;
     whenFB(function(){
       if(myUid!==nu) return;
       unF=window.fbListenRoom(nu,function(d){ friends=(d&&d.list)||[]; renderPane(); },'social_friends');
+      var dfirst=true, dknown={};
+      unDm=window.fbDmListenTo(nu,function(list){
+        dmIn=list;
+        if(!dfirst) list.forEach(function(m){ if(!dknown[m.id] && isFriend(m.from) && !(thFriend&&thFriend.uid===m.from) && (m.ts||0)>(readTs[m.from]||0)) toast('Message de '+(m.fromName||'un ami'),m.text?String(m.text).slice(0,60):'Il t\'a envoyé quelque chose.',function(){ openFriends(); }); });
+        list.forEach(function(m){ dknown[m.id]=1; }); dfirst=false;
+        if(thFriend){ readTs[thFriend.uid]=Date.now(); saveRead(); }
+        badge(); renderPane();
+      });
       var first=true, known={};
       unI=window.fbSocialListen(nu,function(list){
         list.sort(function(a,b){return (b.ts||0)-(a.ts||0);});
@@ -8570,7 +8594,7 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     });
   }
   function badge(){
-    var n=inbox.length, b=document.querySelector('.nav-btn[data-view="community"]');
+    var n=inbox.length+unreadAll(), b=document.querySelector('.nav-btn[data-view="community"]');
     if(b){ var d=b.querySelector('.mx-dot'); if(n&&!d) b.insertAdjacentHTML('beforeend','<i class="mx-dot"></i>'); }
     var t=document.querySelector('#cm-tabs [data-t="friends"]'); if(t) t.textContent='Amis'+(n?' ('+n+')':'');
   }
@@ -8591,14 +8615,14 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
   var fm=document.createElement('div'); fm.id='fr-modal'; fm.innerHTML='<div id="fr-box"></div>'; document.body.appendChild(fm);
   fm.addEventListener('click',function(e){ if(e.target===fm) closeM(); });
   function openM(html){ $('fr-box').innerHTML=html; fm.classList.add('show'); }
-  function closeM(){ fm.classList.remove('show'); stopScan(); }
+  function closeM(){ fm.classList.remove('show'); stopScan(); if(unTh){ unTh(); unTh=null; } thFriend=null; }
   function pickFriend(title,cb){
     if(!me()){ openAuthModal(); return; }
     if(!friends.length){ toast('Pas encore d\'ami','Ajoute un ami dans Communauté > Amis.',function(){ openFriends(); }); return; }
     openM('<h3>'+esc(title)+'</h3>'+friends.map(function(f,i){ return '<div class="fr-row"><div class="fr-av">'+esc((f.name||'?')[0].toUpperCase())+'</div><div class="fr-name">'+esc(f.name)+'</div><button class="pri" data-i="'+i+'">Envoyer</button></div>'; }).join('')+'<div class="fr-row"><button id="fr-cancel">Annuler</button></div>');
     $('fr-box').onclick=function(e){ if(e.target.id==='fr-cancel'){ closeM(); return; } var b=e.target.closest('button[data-i]'); if(!b) return; closeM(); cb(friends[+b.dataset.i]); };
   }
-  function doSend(f,type,p,label){ whenFB(function(){ sendTo(f.uid,type,p).then(function(){ toast('Envoyé à '+f.name,label); }).catch(function(){ toast('Échec','Envoi impossible (règles Firebase).'); }); }); }
+  function doSend(f,type,p,label){ whenFB(function(){ (type==='share'?dmSend(f,'',p):sendTo(f.uid,type,p)).then(function(){ toast('Envoyé à '+f.name,label); }).catch(function(){ toast('Échec','Envoi impossible (règles Firebase).'); }); }); }
   window.mxSendTop=function(kind,keys,title){ pickFriend('Envoyer mon top à…',function(f){ doSend(f,'share',{k:'top',tk:kind,keys:keys.slice(0,10)},title||'Ton top 10 est parti.'); }); };
   function sendSong(s){ pickFriend('Envoyer « '+s.title+' » à…',function(f){ doSend(f,'share',{k:'song',title:s.title,anime:s.anime,aid:s.aid},'La musique est partie.'); }); }
 
@@ -8624,6 +8648,62 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     setTimeout(function(){ $(pre[0]).click(); $(pre[1]).click(); $(pre[2]).value=code; var u=me(); if(u&&$(pre[3])) $(pre[3]).value=u.name||''; toast('Code rempli','Appuie sur « Rejoindre » pour entrer dans la partie.'); },200);
   }
 
+
+  /* --- messagerie privée --- */
+  (function(){ var st=document.createElement('style'); st.textContent='#fr-th{max-height:44vh;overflow:auto;border:2px solid var(--ink);padding:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}.th-m{max-width:82%;padding:7px 10px;border:2px solid var(--ink);font-size:14px;word-break:break-word}.th-m.me{align-self:flex-end;background:var(--ink);color:var(--bg)}.th-m small{display:block;opacity:.6;font-size:10px;margin-top:2px}.th-card{display:flex;flex-direction:column;gap:6px}.th-card button{align-self:flex-start}.th-note{font-size:11px;color:var(--ink-faint);margin-top:6px}'; document.head.appendChild(st); })();
+  function dmSend(f,text,card){
+    var u=me(); if(!u) return Promise.reject();
+    var d={pair:pairOf(myUid,f.uid),from:myUid,to:f.uid,fromName:String(u.name||'').slice(0,30),text:String(text||'').slice(0,500),ts:Date.now()};
+    if(card) d.p=card;
+    return window.fbDmSend(d);
+  }
+  function cardHtml(m,mine){
+    var p=m.p; if(!p) return '';
+    if(p.k==='item') return '<div class="th-card"><b>'+(p.t==='manga'?'Manga':'Animé')+' : '+esc(p.title||'')+'</b><button class="pri" data-ca="item" data-id="'+esc(p.id)+'" data-t="'+esc(p.t)+'">Ouvrir la fiche</button></div>';
+    if(p.k==='song') return '<div class="th-card"><b>Musique : '+esc(p.title||'')+'</b>'+(p.anime?'<span>'+esc(p.anime)+'</span>':'')+'<button class="pri" data-ca="song" data-id="'+esc(p.aid)+'">Ouvrir</button></div>';
+    if(p.k==='top') return '<div class="th-card"><b>Top 10 ('+esc(p.tk)+')</b><button class="pri" data-ca="top" data-mid="'+esc(m.id)+'">Voir</button></div>';
+    if(p.k==='game') return '<div class="th-card"><b>Invitation : '+(p.g==='imposter'?'Imposter':'Enchères')+' (code '+esc(p.code)+')</b>'+(mine?'':'<button class="pri" data-ca="game" data-g="'+esc(p.g)+'" data-code="'+esc(p.code)+'">Rejoindre</button>')+'</div>';
+    return '';
+  }
+  function openThread(f){
+    var u=me(); if(!u){ openAuthModal(); return; }
+    if(unTh){ unTh(); unTh=null; }
+    thFriend=f; var msgs=[];
+    openM('<h3>Discussion avec '+esc(f.name)+'</h3><div id="fr-th"></div><div class="fr-row"><input type="text" id="fr-tx" maxlength="500" placeholder="Écris un message…" style="margin:0;flex:1"><button class="pri" id="fr-tsend">Envoyer</button></div><div class="fr-row"><button id="fr-tmore">+ Fiche, musique, top…</button><button id="fr-cancel">Fermer</button></div><div class="th-note">Messages non chiffrés : ne partage rien de sensible.</div>');
+    thFriend=f;
+    function paint(){
+      var box=$('fr-th'); if(!box) return; var atEnd=box.scrollHeight-box.scrollTop-box.clientHeight<60;
+      box.innerHTML=msgs.length?msgs.map(function(m){ var mine=m.from===myUid, t=new Date(m.ts||0), hh=('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);
+        return '<div class="th-m'+(mine?' me':'')+'">'+(m.text?esc(m.text):'')+cardHtml(m,mine)+'<small>'+hh+'</small></div>'; }).join(''):'<div class="fr-empty">Pas encore de message. Dis bonjour !</div>';
+      if(atEnd||msgs.length<=1) box.scrollTop=box.scrollHeight;
+    }
+    whenFB(function(){
+      if(thFriend!==f) return;
+      unTh=window.fbDmListenPair(pairOf(myUid,f.uid),function(list){
+        msgs=list.filter(function(m){ return m.from===myUid||m.from===f.uid; });
+        var last=0; msgs.forEach(function(m){ if(m.from===f.uid&&(m.ts||0)>last) last=m.ts; });
+        if(last>(readTs[f.uid]||0)){ readTs[f.uid]=last; saveRead(); badge(); }
+        paint();
+      });
+    });
+    function go(){ var inp=$('fr-tx'), v=inp.value.trim(); if(!v) return; if(Date.now()-lastSend<800) return; lastSend=Date.now(); inp.value='';
+      whenFB(function(){ dmSend(f,v).catch(function(){ toast('Échec','Message non envoyé.'); }); }); }
+    $('fr-tsend').onclick=go; $('fr-tx').addEventListener('keydown',function(e){ if(e.key==='Enter') go(); });
+    $('fr-box').onclick=function(e){
+      var id=e.target.id; if(id==='fr-cancel'){ closeM(); return; }
+      if(id==='fr-tmore'){ closeM(); openSend(f); return; }
+      var b=e.target.closest('button[data-ca]'); if(!b) return; var a=b.dataset.ca;
+      if(a==='item'){ closeM(); try{ openDetail(b.dataset.id,b.dataset.t==='manga'?'manga':'anime'); }catch(x){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
+      else if(a==='song'){ closeM(); try{ openDetail(b.dataset.id,'anime'); }catch(x){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
+      else if(a==='game'){ closeM(); joinGame(b.dataset.g==='imposter'?'imposter':'auction',String(b.dataset.code||'').toUpperCase().slice(0,5)); }
+      else if(a==='top'){ var m=msgs.filter(function(x){return x.id===b.dataset.mid;})[0]; if(!m) return;
+        var items=(m.p.keys||[]).map(function(k){return resolveTopKey(k);}).filter(Boolean);
+        $('fr-box').innerHTML='<h3>Top 10 ('+esc(m.p.tk)+')</h3>'+items.map(function(r,j){ return '<div class="fr-row" data-j="'+j+'" style="cursor:pointer"><div class="fr-av">'+(j+1)+'</div><div class="fr-name">'+esc(r.title)+'<div style="font-weight:400;font-size:12px;color:var(--ink-faint)">'+esc(r.sub||'')+'</div></div></div>'; }).join('')+'<div class="fr-row"><button id="fr-back">Retour</button></div>';
+        $('fr-box').onclick=function(ev){ if(ev.target.id==='fr-back'){ openThread(f); return; } var r=ev.target.closest('[data-j]'); if(r){ closeM(); items[+r.dataset.j].onClick(); } }; }
+    };
+  }
+  window.mxSendItem=function(id,type,title){ pickFriend('Envoyer « '+title+' » à…',function(f){ doSend(f,'share',{k:'item',id:id,t:type,title:title},'La fiche est partie.'); }); };
+
   /* --- panneau Amis --- */
   function qrCanvas(text){
     var m=window.mxQR(text), n=m.length, q=4, s=Math.floor(352/(n+2*q)), sz=(n+2*q)*s, c=document.createElement('canvas'); c.width=c.height=sz; var x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,sz,sz); x.fillStyle='#000';
@@ -8641,7 +8721,7 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
       else if(m.p&&m.p.k==='game'){ d=from+' t\'invite à jouer ('+(m.p.g==='imposter'?'Imposter':'Enchères')+', code '+esc(m.p.code)+').'; btn='<button class="pri" data-a="game" data-i="'+i+'">Rejoindre</button><button data-a="no" data-i="'+i+'">Ignorer</button>'; }
       else { d=from+' t\'a écrit.'; btn='<button data-a="no" data-i="'+i+'">Ignorer</button>'; }
       return '<div class="fr-in"><span>'+d+'</span>'+btn+'</div>'; }).join(''):'<div class="fr-empty">Rien de nouveau.</div>';
-    var frH=friends.length?friends.map(function(f,i){ return '<div class="fr-row"><div class="fr-av">'+esc((f.name||'?')[0].toUpperCase())+'</div><div class="fr-name">'+esc(f.name)+'</div><button class="pri" data-a="send" data-i="'+i+'">Envoyer…</button><button data-a="rm" data-i="'+i+'">Retirer</button></div>'; }).join(''):'<div class="fr-empty">Aucun ami pour l\'instant. Partage ton invitation ci-dessus.</div>';
+    var frH=friends.length?friends.map(function(f,i){ return '<div class="fr-row"><div class="fr-av">'+esc((f.name||'?')[0].toUpperCase())+'</div><div class="fr-name">'+esc(f.name)+'</div><button class="pri" data-a="chat" data-i="'+i+'">Discuter'+(unreadFrom(f.uid)?' ('+unreadFrom(f.uid)+')':'')+'</button><button data-a="send" data-i="'+i+'">Envoyer…</button><button data-a="rm" data-i="'+i+'">Retirer</button></div>'; }).join(''):'<div class="fr-empty">Aucun ami pour l\'instant. Partage ton invitation ci-dessus.</div>';
     pane.innerHTML='<div class="fr-card"><h4>Reçu</h4>'+inH+'</div>'+
       '<div class="fr-card"><h4>Mes amis ('+friends.length+')</h4>'+frH+'</div>'+
       '<div class="fr-card"><h4>Inviter un ami</h4><div class="fr-qr"><div id="fr-qrbox"></div><div class="fr-actions"><button class="back-btn" data-a="share" type="button">Partager l\'invitation</button><button class="back-btn" data-a="copy" type="button">Copier le lien</button><button class="back-btn" data-a="wa" type="button">WhatsApp</button><button class="back-btn" data-a="sms" type="button">SMS</button><button class="back-btn" data-a="dlqr" type="button">Télécharger le QR</button></div></div><div class="fr-link">'+esc(link)+'</div></div>'+
@@ -8668,6 +8748,7 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     else if(a==='song'){ consume(m); try{ openDetail(m.p.aid,'anime'); }catch(e2){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
     else if(a==='game'){ consume(m); joinGame(m.p.g==='imposter'?'imposter':'auction',String(m.p.code||'').toUpperCase().slice(0,5)); }
     else if(a==='send'){ openSend(f); }
+    else if(a==='chat'){ openThread(f); }
     else if(a==='rm'){ if(window.confirm('Retirer '+f.name+' de tes amis ?')){ friends.splice(i,1); saveFriends(); renderPane(); } }
     else if(a==='share'){ if(navigator.share){ navigator.share({title:'ANIMEDEX',text:txt,url:link}).catch(function(){}); } else { copy(txt); } }
     else if(a==='copy'){ copy(link); }
@@ -8682,14 +8763,14 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     var u=me(), games=[['imposter','imp-on-room-code'],['auction','auc-on-room-code']].map(function(g){ var el=$(g[1]); return el&&el.textContent.trim()?{g:g[0],code:el.textContent.trim()}:null; }).filter(Boolean);
     var kinds=[['anime','Animés','topAnime'],['manga','Mangas','topManga'],['character','Persos','topCharacters'],['op','Openings','topOp'],['ed','Endings','topEd'],['ost','OST','topOst']];
     openM('<h3>Envoyer à '+esc(f.name)+'</h3><div class="fr-row"><select id="fr-tk" style="margin:0;flex:1">'+kinds.map(function(k){ return '<option value="'+k[0]+'">Mon top 10 '+k[1]+'</option>'; }).join('')+'</select><button class="pri" id="fr-st">Envoyer</button></div>'+
-      '<div style="margin-top:12px"><input type="text" id="fr-sq" placeholder="Chercher une musique (titre ou animé)…"><div id="fr-sr"></div></div>'+
+      '<div style="margin-top:12px"><input type="text" id="fr-sq" placeholder="Chercher une fiche animé/manga ou une musique…"><div id="fr-sr"></div></div>'+
       (games.length?'<div class="fr-row"><span class="fr-name">Mon code de jeu</span>'+games.map(function(g){ return '<button class="pri" data-g="'+g.g+'" data-c="'+esc(g.code)+'">'+(g.g==='imposter'?'Imposter':'Enchères')+' '+esc(g.code)+'</button>'; }).join('')+'</div>':'')+
       '<div class="fr-row"><button id="fr-cancel">Fermer</button></div>');
     var results=[];
     $('fr-st').onclick=function(){ var k=$('fr-tk').value, fld=kinds.filter(function(x){return x[0]===k;})[0][2], keys=(u[fld]||[]); if(!keys.length){ toast('Top vide','Remplis d\'abord ce top dans ton profil.'); return; } closeM(); doSend(f,'share',{k:'top',tk:k,keys:keys.slice(0,10)},'Ton top est parti.'); };
-    $('fr-sq').addEventListener('input',function(){ var q=this.value.trim().toLowerCase(); if(q.length<2){ $('fr-sr').innerHTML=''; return; } results=[]; ['op','ed','ost'].forEach(function(k){ window.mxSongPool(k).forEach(function(s){ if(results.length<8&&(s.title.toLowerCase().indexOf(q)>-1||(s.sub||'').toLowerCase().indexOf(q)>-1)) results.push(s); }); });
+    $('fr-sq').addEventListener('input',function(){ var q=this.value.trim().toLowerCase(); if(q.length<2){ $('fr-sr').innerHTML=''; return; } results=[]; [['anime',ANIME,'Animé'],['manga',MANGA,'Manga']].forEach(function(c){ c[1].forEach(function(it){ if(results.length<8&&String(it.title).toLowerCase().indexOf(q)>-1) results.push({item:1,id:it.id,t:c[0],title:it.title,sub:c[2]}); }); }); ['op','ed','ost'].forEach(function(k){ window.mxSongPool(k).forEach(function(s){ if(results.length<8&&(s.title.toLowerCase().indexOf(q)>-1||(s.sub||'').toLowerCase().indexOf(q)>-1)) results.push(s); }); });
       $('fr-sr').innerHTML=results.map(function(s,i){ return '<div class="fr-row"><div class="fr-name">'+esc(s.title)+'<div style="font-weight:400;font-size:12px;color:var(--ink-faint)">'+esc(s.sub)+'</div></div><button class="pri" data-s="'+i+'">Envoyer</button></div>'; }).join(''); });
-    $('fr-box').onclick=function(e){ if(e.target.id==='fr-cancel'){ closeM(); return; } var s=e.target.closest('button[data-s]'); if(s){ var r=results[+s.dataset.s]; closeM(); doSend(f,'share',{k:'song',title:r.title,anime:r.sub,aid:r.aid},'La musique est partie.'); return; } var g=e.target.closest('button[data-g]'); if(g){ closeM(); doSend(f,'share',{k:'game',g:g.dataset.g,code:g.dataset.c},'Invitation envoyée.'); } };
+    $('fr-box').onclick=function(e){ if(e.target.id==='fr-cancel'){ closeM(); return; } var s=e.target.closest('button[data-s]'); if(s){ var r=results[+s.dataset.s]; closeM(); if(r.item){ doSend(f,'share',{k:'item',id:r.id,t:r.t,title:r.title},'La fiche est partie.'); return; } doSend(f,'share',{k:'song',title:r.title,anime:r.sub,aid:r.aid},'La musique est partie.'); return; } var g=e.target.closest('button[data-g]'); if(g){ closeM(); doSend(f,'share',{k:'game',g:g.dataset.g,code:g.dataset.c},'Invitation envoyée.'); } };
   }
   function openFriends(){ switchView('community'); setTimeout(function(){ var t=document.querySelector('#cm-tabs [data-t="friends"]'); if(t) t.click(); },250); }
   window.mxFriendsOpen=function(){ pane=$('cm-friends'); if(pane&&!pane._b){ pane._b=1; pane.addEventListener('click',onPane); } startSocial(); renderPane(); };
@@ -8831,6 +8912,17 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     v.appendChild(box);
     var done=false, io=new IntersectionObserver(function(en){ if(!done&&en[0].isIntersecting){ done=true; try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} io.disconnect(); } });
     io.observe(box);
+  });
+})();
+
+/* ===== v20 : envoyer une fiche à un ami ===== */
+(function(){
+  var box=document.getElementById('detail-mylist'); if(!box) return;
+  var b=document.createElement('button'); b.type='button'; b.id='detail-send-friend'; b.textContent='Envoyer à un ami'; b.className='back-btn'; b.style.marginTop='8px';
+  box.parentNode.insertBefore(b,box.nextSibling);
+  b.addEventListener('click',function(){
+    var r=resolveItemByKey(currentDetailKey||''); if(!r||!r.item||!window.mxSendItem) return;
+    window.mxSendItem(r.id,r.type,r.item.title);
   });
 })();
 </script>
