@@ -8550,7 +8550,7 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
   function uidOf(u){ return 'u'+simpleHash(String(u.email).toLowerCase()); }
   function nameOfUid(uid,fb){ try{ for(var em in accounts){ if('u'+simpleHash(String(em).toLowerCase())===uid) return accounts[em].name||fb; } }catch(e){} return fb||'Ami'; }
   function whenFB(fn){ if(window.fbReady) fn(); else window.addEventListener('firebase-ready',fn,{once:true}); }
-  var friends=[], inbox=[], myUid=null, unF=null, unI=null, sent=[], dmIn=[], unDm=null, unTh=null, thFriend=null, readTs={}, lastSend=0;
+  var friends=[], inbox=[], myUid=null, unF=null, unI=null, sent=[], friendsLoaded=false, inboxRaw=[], dmIn=[], unDm=null, unTh=null, thFriend=null, readTs={}, lastSend=0;
   try{ readTs=JSON.parse(localStorage.getItem('mx-dm-read')||'{}')||{}; }catch(e){}
   function saveRead(){ try{ localStorage.setItem('mx-dm-read',JSON.stringify(readTs)); }catch(e){} }
   function isFriend(uid){ return friends.some(function(f){return f.uid===uid;}); }
@@ -8558,20 +8558,29 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
   function unreadAll(){ return dmIn.filter(function(m){ return isFriend(m.from) && (m.ts||0)>(readTs[m.from]||0); }).length; }
   function pairOf(a,b){ return [a,b].sort().join('_'); }
   try{ sent=JSON.parse(localStorage.getItem('mx-sent-reqs')||'[]'); }catch(e){}
-  function saveSent(){ try{ localStorage.setItem('mx-sent-reqs',JSON.stringify(sent.slice(-50))); }catch(e){} }
+  function saveSent(){ try{ localStorage.setItem('mx-sent-reqs',JSON.stringify(sent.slice(-50))); }catch(e){} if(friendsLoaded&&myUid) saveFriends(); }
   var pane=null;
   function inviteLink(){ var u=me(); return SITE+'/?add='+uidOf(u)+'&n='+encodeURIComponent(u.name||''); }
-  function saveFriends(){ window.fbSetRoom(myUid,{list:friends},'social_friends'); }
+  function saveFriends(){ if(!friendsLoaded||!myUid) return; window.fbSetRoom(myUid,{list:friends,sent:sent.slice(-50)},'social_friends'); }
   function addFriend(uid,name){ if(uid===myUid) return; if(friends.some(function(f){return f.uid===uid;})) return; friends.push({uid:uid,name:String(name||'Ami').slice(0,30)}); saveFriends(); }
   function sendTo(uid,type,payload){ var u=me(); return window.fbSocialSend({to:uid,from:myUid,fromName:String(u.name||'').slice(0,30),type:type,p:payload||null,ts:Date.now()}); }
+  var okDone={};
+  function handleOk(){
+    if(!friendsLoaded) return;
+    inboxRaw.forEach(function(m){
+      if(m.type!=='friend_ok'||okDone[m.id]) return;
+      if(sent.indexOf(m.from)>-1){ okDone[m.id]=1; addFriend(m.from,m.fromName); toast('Nouvel ami',(m.fromName||'Un ami')+' a accepté ton invitation.'); window.fbSocialDelete(m.id); }
+      else if(Date.now()-(m.ts||0)>7*864e5){ okDone[m.id]=1; window.fbSocialDelete(m.id); }
+    });
+  }
   function startSocial(){
     var u=me(); var nu=u?uidOf(u):null;
     if(nu===myUid) return;
-    if(unF){unF();unF=null;} if(unI){unI();unI=null;} if(unDm){unDm();unDm=null;} if(unTh){unTh();unTh=null;} thFriend=null; friends=[]; inbox=[]; dmIn=[]; myUid=nu; badge(); if(pane&&pane.isConnected) renderPane();
+    if(unF){unF();unF=null;} if(unI){unI();unI=null;} if(unDm){unDm();unDm=null;} if(unTh){unTh();unTh=null;} thFriend=null; friends=[]; inbox=[]; dmIn=[]; friendsLoaded=false; inboxRaw=[]; myUid=nu; badge(); if(pane&&pane.isConnected) renderPane();
     if(!nu) return;
     whenFB(function(){
       if(myUid!==nu) return;
-      unF=window.fbListenRoom(nu,function(d){ friends=(d&&d.list)||[]; renderPane(); },'social_friends');
+      unF=window.fbListenRoom(nu,function(d){ friends=(d&&d.list)||[]; if(d&&d.sent){ var ch=false; d.sent.forEach(function(x){ if(sent.indexOf(x)<0){ sent.push(x); ch=true; } }); if(ch){ try{ localStorage.setItem('mx-sent-reqs',JSON.stringify(sent.slice(-50))); }catch(e){} } } var was=friendsLoaded; friendsLoaded=true; if(!was){ handleOk(); if(sent.length&&!(d&&d.sent&&d.sent.length)) saveFriends(); } renderPane(); },'social_friends');
       var dfirst=true, dknown={};
       unDm=window.fbDmListenTo(nu,function(list){
         dmIn=list;
@@ -8583,9 +8592,7 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
       var first=true, known={};
       unI=window.fbSocialListen(nu,function(list){
         list.sort(function(a,b){return (b.ts||0)-(a.ts||0);});
-        list.forEach(function(m){
-          if(m.type==='friend_ok'){ if(sent.indexOf(m.from)>-1){ addFriend(m.from,m.fromName); toast('Nouvel ami',(m.fromName||'Un ami')+' a accepté ton invitation.'); } window.fbSocialDelete(m.id); }
-        });
+        inboxRaw=list; handleOk();
         list=list.filter(function(m){return m.type!=='friend_ok';});
         if(!first) list.forEach(function(m){ if(!known[m.id]) toast(m.type==='friend_req'?'Demande d\'ami':'Nouveau message d\'ami',(m.fromName||'Quelqu\'un')+(m.type==='friend_req'?' veut t\'ajouter.':' t\'a envoyé quelque chose.'),function(){ openFriends(); }); });
         list.forEach(function(m){ known[m.id]=1; }); first=false;
