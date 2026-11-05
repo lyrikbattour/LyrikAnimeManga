@@ -1,6 +1,6 @@
 // Conseiller IA ANIMEDEX — fonction serverless Vercel (la clé Gemini reste secrète côté serveur)
 // Variable d'environnement requise sur Vercel : GEMINI_API_KEY
-const MODELS = [process.env.GEMINI_MODEL, 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter(Boolean);
+const MODELS = [process.env.GEMINI_MODEL, 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.5-flash-lite'].filter(Boolean);
 const ALLOWED = ['https://animedexfr.fr', 'https://www.animedexfr.fr', 'https://lyrik-anime-manga.vercel.app'];
 const hits = new Map(); // limite simple par IP (best effort, mémoire de l'instance)
 
@@ -63,7 +63,7 @@ module.exports = async (req, res) => {
       let t = ''; try { t = (await r.text()).slice(0, 300); } catch (e) {}
       lastErr = model + ' -> ' + r.status + ' ' + t;
       console.error('Gemini error', lastErr);
-      if (r.status !== 404 && r.status !== 400) break; // modèle inconnu : on essaie le suivant, sinon on s'arrête
+      if (![400, 404, 429, 500, 503].includes(r.status)) break; // modèle inconnu ou surchargé : on essaie le suivant
     }
     if (!r || !r.ok) return res.status(502).json({ error: 'IA indisponible pour le moment', detail: lastErr.slice(0, 200) });
     const j = await r.json();
