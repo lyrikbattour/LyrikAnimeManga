@@ -1,6 +1,6 @@
 // Conseiller IA ANIMEDEX — fonction serverless Vercel (la clé Gemini reste secrète côté serveur)
 // Variable d'environnement requise sur Vercel : GEMINI_API_KEY
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+const MODELS = [process.env.GEMINI_MODEL, 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter(Boolean);
 const ALLOWED = ['https://animedexfr.fr', 'https://www.animedexfr.fr', 'https://lyrik-anime-manga.vercel.app'];
 const hits = new Map(); // limite simple par IP (best effort, mémoire de l'instance)
 
@@ -46,18 +46,26 @@ module.exports = async (req, res) => {
     "DEMANDE : " + q + "\n\nCATALOGUE :\n" + lines.join('\n');
 
   try {
-    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.4, maxOutputTokens: 600, responseMimeType: 'application/json',
-          responseSchema: { type: 'OBJECT', properties: { picks: { type: 'ARRAY', items: { type: 'OBJECT', properties: { key: { type: 'STRING' }, why: { type: 'STRING' } }, required: ['key', 'why'] } } }, required: ['picks'] }
-        }
-      })
-    });
-    if (!r.ok) return res.status(502).json({ error: 'IA indisponible pour le moment' });
+    let r = null, lastErr = '';
+    for (const model of MODELS) {
+      r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.4, maxOutputTokens: 600, responseMimeType: 'application/json',
+            responseSchema: { type: 'OBJECT', properties: { picks: { type: 'ARRAY', items: { type: 'OBJECT', properties: { key: { type: 'STRING' }, why: { type: 'STRING' } }, required: ['key', 'why'] } } }, required: ['picks'] }
+          }
+        })
+      });
+      if (r.ok) break;
+      let t = ''; try { t = (await r.text()).slice(0, 300); } catch (e) {}
+      lastErr = model + ' -> ' + r.status + ' ' + t;
+      console.error('Gemini error', lastErr);
+      if (r.status !== 404 && r.status !== 400) break; // modèle inconnu : on essaie le suivant, sinon on s'arrête
+    }
+    if (!r || !r.ok) return res.status(502).json({ error: 'IA indisponible pour le moment', detail: lastErr.slice(0, 200) });
     const j = await r.json();
     const txt = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0].text;
     let picks = [];
