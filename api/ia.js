@@ -1,6 +1,6 @@
 // Conseiller IA ANIMEDEX — fonction serverless Vercel (la clé Gemini reste secrète côté serveur)
 // Variable d'environnement requise sur Vercel : GEMINI_API_KEY
-const MODELS = [process.env.GEMINI_MODEL, 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite'].filter(Boolean);
+const MODELS = [process.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite'].filter(Boolean);
 const ALLOWED = ['https://animedexfr.fr', 'https://www.animedexfr.fr', 'https://lyrik-anime-manga.vercel.app'];
 const hits = new Map(); // limite simple par IP (best effort, mémoire de l'instance)
 
@@ -48,8 +48,8 @@ module.exports = async (req, res) => {
   try {
     let r = null, lastErr = '';
     for (const model of MODELS) {
-      r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
-        method: 'POST',
+      r = await (async () => { try { return await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
+        method: 'POST', signal: AbortSignal.timeout(7000),
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -58,12 +58,20 @@ module.exports = async (req, res) => {
             responseSchema: { type: 'OBJECT', properties: { picks: { type: 'ARRAY', items: { type: 'OBJECT', properties: { key: { type: 'STRING' }, why: { type: 'STRING' } }, required: ['key', 'why'] } } }, required: ['picks'] }
           }
         })
-      });
+      }); } catch (e) { return null; } })();
+      if (!r) { lastErr = model + ' -> timeout'; console.error('Gemini timeout', model); continue; }
       if (r.ok) break;
       let t = ''; try { t = (await r.text()).slice(0, 300); } catch (e) {}
       lastErr = model + ' -> ' + r.status + ' ' + t;
       console.error('Gemini error', lastErr);
       if (![400, 404, 429, 500, 503].includes(r.status)) break; // modèle inconnu ou surchargé : on essaie le suivant
+    }
+    if (!r || !r.ok) {
+      try { // diagnostic : liste des modèles réellement disponibles pour cette clé
+        const lm = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100', { headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY }, signal: AbortSignal.timeout(4000) });
+        const lj = await lm.json();
+        console.error('Modèles disponibles:', (lj.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', '')).join(', '));
+      } catch (e) { console.error('ListModels impossible', String(e).slice(0, 100)); }
     }
     if (!r || !r.ok) return res.status(502).json({ error: 'IA indisponible pour le moment', detail: lastErr.slice(0, 200) });
     const j = await r.json();
