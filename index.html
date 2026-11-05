@@ -5032,7 +5032,7 @@ document.getElementById('auc-on-quit-play-btn').addEventListener('click', quitAu
   // --- chargement différé des données musique (ost-data.js) ---
   window.__mxCur = null;
   (function(){
-    const sc = document.createElement('script'); sc.src = 'ost-data.js?v=2'; sc.async = true;
+    const sc = document.createElement('script'); sc.src = 'ost-data.js?v=3'; sc.async = true;
     sc.onload = function(){
       try{
         const d = window.MX_DATA || {};
@@ -6899,7 +6899,7 @@ header .brand .sub{display:none;}
     $('cm-tabs').querySelectorAll('.chip').forEach(function(c){ c.classList.toggle('active',c.dataset.t===tab); });
     $('cm-chat').style.display=tab==='chat'?'':'none'; $('cm-rank').style.display=tab==='rank'?'':'none'; $('cm-friends').style.display=tab==='friends'?'':'none';
   }
-  $('cm-tabs').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c) return; tab=c.dataset.t; renderTabs(); if(tab==='rank'){ stopChat(); renderRank(); } else if(tab==='friends'){ stopChat(); if(window.mxFriendsOpen) window.mxFriendsOpen(); } else startChat(); });
+  $('cm-tabs').addEventListener('click',function(e){ var c=e.target.closest('.chip'); if(!c) return; tab=c.dataset.t; if(tab!=='friends'&&window.mxFriendsClose) window.mxFriendsClose(); renderTabs(); if(tab==='rank'){ stopChat(); renderRank(); } else if(tab==='friends'){ stopChat(); if(window.mxFriendsOpen) window.mxFriendsOpen(); } else startChat(); });
 
   /* ---- filtre de gros mots ---- */
   var BAD={connard:1,connasse:1,salope:1,pute:1,encule:1,enculer:1,enculee:1,fdp:1,ntm:1,batard:1,negro:1,nigger:1,nigga:1,pedale:1,tarlouze:1,fils2pute:1};
@@ -6920,8 +6920,12 @@ header .brand .sub{display:none;}
     if(!u){ f.innerHTML='<div class="cm-login">Connecte-toi pour écrire dans le chat. <button class="back-btn" id="cm-login" type="button" style="margin-left:8px">Se connecter</button></div>'; $('cm-login').onclick=function(){ openAuthModal(); }; return; }
     if(blocked[uidOf(u)]){ f.innerHTML='<div class="cm-login">Tu ne peux plus écrire dans le chat.</div>'; return; }
     if(f.querySelector('form')) return;
-    f.innerHTML='<form class="cm-form" id="cm-form" autocomplete="off"><input id="cm-input" maxlength="500" placeholder="Écris un message…" aria-label="Message"><button type="submit">Envoyer</button></form>';
+    f.innerHTML='<form class="cm-form" id="cm-form" autocomplete="off"><button type="button" class="cm-emo" id="cm-emo" aria-label="Emojis">🙂</button><input id="cm-input" maxlength="500" placeholder="Écris un message…" aria-label="Message"><button type="submit" aria-label="Envoyer">➤</button></form><div class="cm-emopop" id="cm-emopop" hidden></div>';
     $('cm-form').addEventListener('submit',function(e){ e.preventDefault(); send(); });
+    (function(){ var pop=$('cm-emopop'), EM=['😀','😂','🥹','😍','😎','🤔','😭','😡','🔥','❤️','👍','👏','🙏','🎉','💀','✨','⚔️','🍥','🎌','🎵','👀','😴','🤯','🥳'];
+      pop.innerHTML=EM.map(function(x){ return '<button type="button">'+x+'</button>'; }).join('');
+      $('cm-emo').onclick=function(){ pop.hidden=!pop.hidden; };
+      pop.onclick=function(e){ var b=e.target.closest('button'); if(!b) return; var i=$('cm-input'), p=i.selectionStart==null?i.value.length:i.selectionStart; i.value=i.value.slice(0,p)+b.textContent+i.value.slice(p); i.focus(); i.setSelectionRange(p+b.textContent.length,p+b.textContent.length); }; })();
   }
   function timeStr(ts){ try{ var d=new Date(ts), n=new Date(); var h=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); return d.toDateString()===n.toDateString()?h:d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+h; }catch(e){ return ''; } }
   function renderMsgs(){
@@ -6929,14 +6933,15 @@ header .brand .sub{display:none;}
     var near=box.scrollHeight-box.scrollTop-box.clientHeight<80 || !box.children.length;
     var list=msgs.filter(function(m){ return !blocked[m.uid]; });
     if(!list.length){ box.innerHTML='<div class="cm-empty">Aucun message ici pour le moment. Lance la discussion !</div>'; return; }
-    box.innerHTML=list.map(function(m){
+    box.innerHTML=window.mxBubbles(list.map(function(m){
       var own=m.uid===mine, ad=admins.indexOf(m.uid)>-1;
       var acts=''; if(u){ if(own||adm) acts+='<button data-a="del" data-id="'+esc(m.id)+'">Supprimer</button>'; if(!own) acts+='<button data-a="rep" data-id="'+esc(m.id)+'">Signaler</button>'; if(adm&&!own) acts+='<button data-a="blk" data-id="'+esc(m.id)+'">Bloquer</button>'; }
-      return '<div class="cm-msg"><div class="cm-head"><b>'+esc(m.name||'Anonyme')+'</b>'+(ad?'<span class="cm-badge">Admin</span>':'')+'<span>'+timeStr(m.ts)+'</span><span class="cm-act">'+acts+'</span></div><div class="cm-text">'+esc(clean(m.text||''))+'</div></div>';
-    }).join('');
+      return {id:m.id,uid:m.uid,name:m.name||'Anonyme',ts:m.ts,own:own,admin:ad,acts:acts,body:esc(clean(m.text||''))};
+    }),{showName:true});
     if(near) box.scrollTop=box.scrollHeight;
   }
   $('cm-msgs').addEventListener('click',function(e){
+    if(!e.target.closest('button')){ var rw=e.target.closest('.mb-row'); if(rw){ var was=rw.classList.contains('show'); $('cm-msgs').querySelectorAll('.mb-row.show').forEach(function(x){ x.classList.remove('show'); }); if(!was) rw.classList.add('show'); } return; }
     var b=e.target.closest('button[data-a]'); if(!b) return; var id=b.dataset.id, a=b.dataset.a, m=msgs.filter(function(x){return x.id===id;})[0]; if(!m) return;
     if(a==='del'){ if(b.dataset.sure!=='1'){ b.dataset.sure='1'; b.textContent='Confirmer ?'; setTimeout(function(){ if(b.isConnected){ b.dataset.sure='0'; b.textContent='Supprimer'; } },3000); return; } window.fbChatDelete(room,id); }
     if(a==='rep'){ b.disabled=true; b.textContent='Signalé ✓'; window.fbChatReport({room:room,msgId:id,text:String(m.text||'').slice(0,500),author:m.name||'',authorUid:m.uid||'',by:me()?me().name:'',ts:Date.now()}); }
@@ -6988,7 +6993,7 @@ header .brand .sub{display:none;}
   new MutationObserver(function(){
     var on=sec.classList.contains('active');
     if(on&&!active){ active=true; renderTabs(); if(tab==='rank') renderRank(); else if(tab==='friends'){ if(window.mxFriendsOpen) window.mxFriendsOpen(); } else startChat(); }
-    if(!on&&active){ active=false; stopChat(); }
+    if(!on&&active){ active=false; stopChat(); if(window.mxFriendsClose) window.mxFriendsClose(); }
   }).observe(sec,{attributes:true,attributeFilter:['class']});
   /* connexion / déconnexion pendant que la vue est ouverte */
   var lastU=null; setInterval(function(){ var u=me()&&me().email||null; if(u!==lastU){ lastU=u; if(active&&tab==='chat'){ var f=$('cm-foot'); if(f) f.innerHTML=''; renderFoot(); renderMsgs(); if(isAdmin()&&!unsubRep) startChat(); } } },1200);
@@ -8550,7 +8555,7 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
   function uidOf(u){ return 'u'+simpleHash(String(u.email).toLowerCase()); }
   function nameOfUid(uid,fb){ try{ for(var em in accounts){ if('u'+simpleHash(String(em).toLowerCase())===uid) return accounts[em].name||fb; } }catch(e){} return fb||'Ami'; }
   function whenFB(fn){ if(window.fbReady) fn(); else window.addEventListener('firebase-ready',fn,{once:true}); }
-  var friends=[], inbox=[], myUid=null, unF=null, unI=null, sent=[], friendsLoaded=false, inboxRaw=[], dmIn=[], unDm=null, unTh=null, thFriend=null, readTs={}, lastSend=0;
+  var paneMode='list', pendingOpen=null, lastOut={}, friends=[], inbox=[], myUid=null, unF=null, unI=null, sent=[], friendsLoaded=false, inboxRaw=[], dmIn=[], unDm=null, unTh=null, thFriend=null, readTs={}, lastSend=0;
   try{ readTs=JSON.parse(localStorage.getItem('mx-dm-read')||'{}')||{}; }catch(e){}
   function saveRead(){ try{ localStorage.setItem('mx-dm-read',JSON.stringify(readTs)); }catch(e){} }
   function isFriend(uid){ return friends.some(function(f){return f.uid===uid;}); }
@@ -8580,11 +8585,11 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     if(!nu) return;
     whenFB(function(){
       if(myUid!==nu) return;
-      unF=window.fbListenRoom(nu,function(d){ friends=(d&&d.list)||[]; if(d&&d.sent){ var ch=false; d.sent.forEach(function(x){ if(sent.indexOf(x)<0){ sent.push(x); ch=true; } }); if(ch){ try{ localStorage.setItem('mx-sent-reqs',JSON.stringify(sent.slice(-50))); }catch(e){} } } var was=friendsLoaded; friendsLoaded=true; if(!was){ handleOk(); if(sent.length&&!(d&&d.sent&&d.sent.length)) saveFriends(); } renderPane(); },'social_friends');
+      unF=window.fbListenRoom(nu,function(d){ friends=(d&&d.list)||[]; if(d&&d.sent){ var ch=false; d.sent.forEach(function(x){ if(sent.indexOf(x)<0){ sent.push(x); ch=true; } }); if(ch){ try{ localStorage.setItem('mx-sent-reqs',JSON.stringify(sent.slice(-50))); }catch(e){} } } var was=friendsLoaded; friendsLoaded=true; if(!was){ handleOk(); if(sent.length&&!(d&&d.sent&&d.sent.length)) saveFriends(); } tryPending(); renderPane(); },'social_friends');
       var dfirst=true, dknown={};
       unDm=window.fbDmListenTo(nu,function(list){
         dmIn=list;
-        if(!dfirst) list.forEach(function(m){ if(!dknown[m.id] && isFriend(m.from) && !(thFriend&&thFriend.uid===m.from) && (m.ts||0)>(readTs[m.from]||0)) toast('Message de '+(m.fromName||'un ami'),m.text?String(m.text).slice(0,60):'Il t\'a envoyé quelque chose.',function(){ openFriends(); }); });
+        if(!dfirst) list.forEach(function(m){ if(!dknown[m.id] && isFriend(m.from) && !(thFriend&&thFriend.uid===m.from) && (m.ts||0)>(readTs[m.from]||0)) toast('Message de '+(m.fromName||'un ami'),m.text?String(m.text).slice(0,60):'Il t\'a envoyé quelque chose.',function(){ openFriends(m.from); }); });
         list.forEach(function(m){ dknown[m.id]=1; }); dfirst=false;
         if(thFriend){ readTs[thFriend.uid]=Date.now(); saveRead(); }
         badge(); renderPane();
@@ -8622,7 +8627,7 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
   var fm=document.createElement('div'); fm.id='fr-modal'; fm.innerHTML='<div id="fr-box"></div>'; document.body.appendChild(fm);
   fm.addEventListener('click',function(e){ if(e.target===fm) closeM(); });
   function openM(html){ $('fr-box').innerHTML=html; fm.classList.add('show'); }
-  function closeM(){ fm.classList.remove('show'); stopScan(); if(unTh){ unTh(); unTh=null; } thFriend=null; }
+  function closeM(){ fm.classList.remove('show'); stopScan(); }
   function pickFriend(title,cb){
     if(!me()){ openAuthModal(); return; }
     if(!friends.length){ toast('Pas encore d\'ami','Ajoute un ami dans Communauté > Amis.',function(){ openFriends(); }); return; }
@@ -8658,11 +8663,16 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
 
   /* --- messagerie privée --- */
   (function(){ var st=document.createElement('style'); st.textContent='#fr-th{max-height:44vh;overflow:auto;border:2px solid var(--ink);padding:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}.th-m{max-width:82%;padding:7px 10px;border:2px solid var(--ink);font-size:14px;word-break:break-word}.th-m.me{align-self:flex-end;background:var(--ink);color:var(--bg)}.th-m small{display:block;opacity:.6;font-size:10px;margin-top:2px}.th-card{display:flex;flex-direction:column;gap:6px}.th-card button{align-self:flex-start}.th-note{font-size:11px;color:var(--ink-faint);margin-top:6px}'; document.head.appendChild(st); })();
+  try{ lastOut=JSON.parse(localStorage.getItem('mx-dm-out')||'{}')||{}; }catch(e){}
+  function cardLabel(p){ if(!p) return ''; return p.k==='item'?'Fiche : '+(p.title||''):p.k==='song'?'Musique : '+(p.title||''):p.k==='top'?'Top 10':'Invitation de jeu'; }
+  function noteOut(uid,text,card){ lastOut[uid]={ts:Date.now(),t:text||cardLabel(card)}; try{ localStorage.setItem('mx-dm-out',JSON.stringify(lastOut)); }catch(e){} }
+  function lastInfo(uid){ var best=null; dmIn.forEach(function(m){ if(m.from===uid&&(!best||(m.ts||0)>best.ts)) best={ts:m.ts||0,t:m.text||cardLabel(m.p)}; }); var o=lastOut[uid]; if(o&&(!best||o.ts>best.ts)) best={ts:o.ts,t:'Toi : '+o.t}; return best; }
+  function timeShort(ts){ var d=new Date(ts), n=new Date(); return d.toDateString()===n.toDateString()?('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2):('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2); }
   function dmSend(f,text,card){
     var u=me(); if(!u) return Promise.reject();
     var d={pair:pairOf(myUid,f.uid),from:myUid,to:f.uid,fromName:String(u.name||'').slice(0,30),text:String(text||'').slice(0,500),ts:Date.now()};
     if(card) d.p=card;
-    return window.fbDmSend(d);
+    return window.fbDmSend(d).then(function(r){ noteOut(f.uid,text,card); return r; });
   }
   function cardHtml(m,mine){
     var p=m.p; if(!p) return '';
@@ -8672,16 +8682,17 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     if(p.k==='game') return '<div class="th-card"><b>Invitation : '+(p.g==='imposter'?'Imposter':'Enchères')+' (code '+esc(p.code)+')</b>'+(mine?'':'<button class="pri" data-ca="game" data-g="'+esc(p.g)+'" data-code="'+esc(p.code)+'">Rejoindre</button>')+'</div>';
     return '';
   }
+  function leaveThread(){ if(unTh){ unTh(); unTh=null; } thFriend=null; }
   function openThread(f){
     var u=me(); if(!u){ openAuthModal(); return; }
-    if(unTh){ unTh(); unTh=null; }
-    thFriend=f; var msgs=[];
-    openM('<h3>Discussion avec '+esc(f.name)+'</h3><div id="fr-th"></div><div class="fr-row"><input type="text" id="fr-tx" maxlength="500" placeholder="Écris un message…" style="margin:0;flex:1"><button class="pri" id="fr-tsend">Envoyer</button></div><div class="fr-row"><button id="fr-tmore">+ Fiche, musique, top…</button><button id="fr-cancel">Fermer</button></div><div class="th-note">Messages non chiffrés : ne partage rien de sensible.</div>');
-    thFriend=f;
+    leaveThread(); thFriend=f; paneMode='thread'; drawThread();
+  }
+  function drawThread(){
+    var f=thFriend; if(!f||!pane||!pane.isConnected) return; var msgs=[];
+    pane.innerHTML='<div class="fm-thread" id="fr-thread"><div class="fm-th-head"><button type="button" class="fm-ic" data-a="back" aria-label="Retour">←</button>'+window.mxAvatar(f.name)+'<b class="fm-th-name">'+esc(f.name)+'</b><span class="fm-grow"></span><button type="button" class="fm-ic" data-a="rmth" title="Retirer cet ami" aria-label="Retirer cet ami">⋯</button></div><div id="fr-th" class="fm-msgs"></div><div class="fm-comp"><button type="button" class="fm-ic" data-a="sendth" title="Envoyer une fiche, une musique, un top…" aria-label="Envoyer une fiche, une musique ou un top">＋</button><input type="text" id="fr-tx" maxlength="500" placeholder="Écris un message…" autocomplete="off" aria-label="Message"><button type="button" class="fm-send" id="fr-tsend" aria-label="Envoyer">➤</button></div><div class="th-note">Messages non chiffrés : ne partage rien de sensible.</div></div>';
     function paint(){
-      var box=$('fr-th'); if(!box) return; var atEnd=box.scrollHeight-box.scrollTop-box.clientHeight<60;
-      box.innerHTML=msgs.length?msgs.map(function(m){ var mine=m.from===myUid, t=new Date(m.ts||0), hh=('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);
-        return '<div class="th-m'+(mine?' me':'')+'">'+(m.text?esc(m.text):'')+cardHtml(m,mine)+'<small>'+hh+'</small></div>'; }).join(''):'<div class="fr-empty">Pas encore de message. Dis bonjour !</div>';
+      var box=$('fr-th'); if(!box) return; var atEnd=box.scrollHeight-box.scrollTop-box.clientHeight<70;
+      box.innerHTML=msgs.length?window.mxBubbles(msgs.map(function(m){ var mine=m.from===myUid; return {id:m.id,uid:m.from,name:m.fromName,ts:m.ts,own:mine,body:(m.text?esc(m.text):'')+cardHtml(m,mine)}; }),{showName:false}):'<div class="cm-empty">Pas encore de message. Dis bonjour !</div>';
       if(atEnd||msgs.length<=1) box.scrollTop=box.scrollHeight;
     }
     whenFB(function(){
@@ -8696,19 +8707,19 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     function go(){ var inp=$('fr-tx'), v=inp.value.trim(); if(!v) return; if(Date.now()-lastSend<800) return; lastSend=Date.now(); inp.value='';
       whenFB(function(){ dmSend(f,v).catch(function(){ toast('Échec','Message non envoyé.'); }); }); }
     $('fr-tsend').onclick=go; $('fr-tx').addEventListener('keydown',function(e){ if(e.key==='Enter') go(); });
-    $('fr-box').onclick=function(e){
-      var id=e.target.id; if(id==='fr-cancel'){ closeM(); return; }
-      if(id==='fr-tmore'){ closeM(); openSend(f); return; }
+    $('fr-th').onclick=function(e){
       var b=e.target.closest('button[data-ca]'); if(!b) return; var a=b.dataset.ca;
-      if(a==='item'){ closeM(); try{ openDetail(b.dataset.id,b.dataset.t==='manga'?'manga':'anime'); }catch(x){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
-      else if(a==='song'){ closeM(); try{ openDetail(b.dataset.id,'anime'); }catch(x){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
-      else if(a==='game'){ closeM(); joinGame(b.dataset.g==='imposter'?'imposter':'auction',String(b.dataset.code||'').toUpperCase().slice(0,5)); }
+      if(a==='item'){ try{ openDetail(b.dataset.id,b.dataset.t==='manga'?'manga':'anime'); }catch(x){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
+      else if(a==='song'){ try{ openDetail(b.dataset.id,'anime'); }catch(x){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
+      else if(a==='game'){ joinGame(b.dataset.g==='imposter'?'imposter':'auction',String(b.dataset.code||'').toUpperCase().slice(0,5)); }
       else if(a==='top'){ var m=msgs.filter(function(x){return x.id===b.dataset.mid;})[0]; if(!m) return;
         var items=(m.p.keys||[]).map(function(k){return resolveTopKey(k);}).filter(Boolean);
-        $('fr-box').innerHTML='<h3>Top 10 ('+esc(m.p.tk)+')</h3>'+items.map(function(r,j){ return '<div class="fr-row" data-j="'+j+'" style="cursor:pointer"><div class="fr-av">'+(j+1)+'</div><div class="fr-name">'+esc(r.title)+'<div style="font-weight:400;font-size:12px;color:var(--ink-faint)">'+esc(r.sub||'')+'</div></div></div>'; }).join('')+'<div class="fr-row"><button id="fr-back">Retour</button></div>';
-        $('fr-box').onclick=function(ev){ if(ev.target.id==='fr-back'){ openThread(f); return; } var r=ev.target.closest('[data-j]'); if(r){ closeM(); items[+r.dataset.j].onClick(); } }; }
+        openM('<h3>Top 10 ('+esc(m.p.tk)+')</h3>'+items.map(function(r,j){ return '<div class="fr-row" data-j="'+j+'" style="cursor:pointer"><div class="fr-av">'+(j+1)+'</div><div class="fr-name">'+esc(r.title)+'<div style="font-weight:400;font-size:12px;color:var(--ink-faint)">'+esc(r.sub||'')+'</div></div></div>'; }).join('')+'<div class="fr-row"><button id="fr-cancel">Fermer</button></div>');
+        $('fr-box').onclick=function(ev){ if(ev.target.id==='fr-cancel'){ closeM(); return; } var r=ev.target.closest('[data-j]'); if(r){ closeM(); items[+r.dataset.j].onClick(); } }; }
     };
+    setTimeout(function(){ var i=$('fr-tx'); if(i&&window.innerWidth>700) i.focus(); },50);
   }
+  window.mxFriendsClose=function(){ leaveThread(); paneMode='list'; };
   window.mxSendItem=function(id,type,title){ pickFriend('Envoyer « '+title+' » à…',function(f){ doSend(f,'share',{k:'item',id:id,t:type,title:title},'La fiche est partie.'); }); };
 
   /* --- panneau Amis --- */
@@ -8716,23 +8727,31 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     var m=window.mxQR(text), n=m.length, q=4, s=Math.floor(352/(n+2*q)), sz=(n+2*q)*s, c=document.createElement('canvas'); c.width=c.height=sz; var x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,sz,sz); x.fillStyle='#000';
     for(var r=0;r<n;r++) for(var k=0;k<n;k++) if(m[r][k]) x.fillRect((k+q)*s,(r+q)*s,s,s); return c;
   }
-  function renderPane(){
-    if(!pane||!pane.isConnected) return;
-    var u=me();
-    if(!u){ pane.innerHTML='<div class="fr-card"><div class="fr-empty">Connecte-toi pour ajouter des amis et leur envoyer des musiques, des tops ou un code de jeu.</div><button class="back-btn" id="fr-login" type="button" style="margin-top:8px">Se connecter</button></div>'; $('fr-login').onclick=function(){ openAuthModal(); return; }; return; }
-    var link=inviteLink(), keep=pane.querySelector('#fr-qrbox');
-    var inH=inbox.length?inbox.map(function(m,i){ var d=''; var from=esc(m.fromName||'Quelqu\'un'), btn='';
+  function inboxHtml(){
+    return inbox.map(function(m,i){ var d='', from=esc(m.fromName||'Quelqu\'un'), btn='';
       if(m.type==='friend_req'){ d=from+' veut devenir ton ami.'; btn='<button class="pri" data-a="acc" data-i="'+i+'">Accepter</button><button data-a="no" data-i="'+i+'">Refuser</button>'; }
       else if(m.p&&m.p.k==='top'){ d=from+' t\'envoie son top 10 ('+esc(m.p.tk)+').'; btn='<button class="pri" data-a="top" data-i="'+i+'">Voir</button><button data-a="no" data-i="'+i+'">Ignorer</button>'; }
       else if(m.p&&m.p.k==='song'){ d=from+' t\'envoie « '+esc(m.p.title)+' »'+(m.p.anime?' ('+esc(m.p.anime)+')':'')+'.'; btn='<button class="pri" data-a="song" data-i="'+i+'">Ouvrir</button><button data-a="no" data-i="'+i+'">Ignorer</button>'; }
       else if(m.p&&m.p.k==='game'){ d=from+' t\'invite à jouer ('+(m.p.g==='imposter'?'Imposter':'Enchères')+', code '+esc(m.p.code)+').'; btn='<button class="pri" data-a="game" data-i="'+i+'">Rejoindre</button><button data-a="no" data-i="'+i+'">Ignorer</button>'; }
       else { d=from+' t\'a écrit.'; btn='<button data-a="no" data-i="'+i+'">Ignorer</button>'; }
-      return '<div class="fr-in"><span>'+d+'</span>'+btn+'</div>'; }).join(''):'<div class="fr-empty">Rien de nouveau.</div>';
-    var frH=friends.length?friends.map(function(f,i){ return '<div class="fr-row"><div class="fr-av">'+esc((f.name||'?')[0].toUpperCase())+'</div><div class="fr-name">'+esc(f.name)+'</div><button class="pri" data-a="chat" data-i="'+i+'">Discuter'+(unreadFrom(f.uid)?' ('+unreadFrom(f.uid)+')':'')+'</button><button data-a="send" data-i="'+i+'">Envoyer…</button><button data-a="rm" data-i="'+i+'">Retirer</button></div>'; }).join(''):'<div class="fr-empty">Aucun ami pour l\'instant. Partage ton invitation ci-dessus.</div>';
-    pane.innerHTML='<div class="fr-card"><h4>Reçu</h4>'+inH+'</div>'+
-      '<div class="fr-card"><h4>Mes amis ('+friends.length+')</h4>'+frH+'</div>'+
+      return '<div class="fr-in"><span>'+d+'</span>'+btn+'</div>'; }).join('');
+  }
+  function tryPending(){ if(!pendingOpen) return; var ff=friends.filter(function(x){ return x.uid===pendingOpen; })[0]; if(ff){ pendingOpen=null; openThread(ff); } }
+  function renderPane(){
+    if(!pane||!pane.isConnected) return;
+    var u=me();
+    if(!u){ pane.innerHTML='<div class="fr-card"><div class="fr-empty">Connecte-toi pour ajouter des amis, discuter et leur envoyer des fiches, des musiques, des tops ou un code de jeu.</div><button class="back-btn" id="fr-login" type="button" style="margin-top:8px">Se connecter</button></div>'; $('fr-login').onclick=function(){ openAuthModal(); }; return; }
+    if(paneMode==='thread'&&thFriend){ if(!pane.querySelector('#fr-thread')) drawThread(); return; }
+    if(paneMode==='add'){ drawAdd(); return; }
+    var rows=friends.map(function(f,i){ return {f:f,i:i,li:lastInfo(f.uid),un:unreadFrom(f.uid)}; }).sort(function(a,b){ return ((b.li&&b.li.ts)||0)-((a.li&&a.li.ts)||0); });
+    var listH=rows.length?rows.map(function(r){ return '<button type="button" class="fm-row'+(r.un?' unread':'')+'" data-a="open" data-i="'+r.i+'">'+window.mxAvatar(r.f.name)+'<span class="fm-mid"><b>'+esc(r.f.name)+'</b><small>'+(r.li?esc(String(r.li.t).slice(0,70)):'Dis bonjour 👋')+'</small></span><span class="fm-side">'+(r.li?'<time>'+timeShort(r.li.ts)+'</time>':'')+(r.un?'<i class="fm-badge">'+r.un+'</i>':'')+'</span></button>'; }).join(''):'<div class="fm-empty"><b>Aucun ami pour l\'instant</b><span>Invite quelqu\'un avec un lien ou un QR code, puis discutez ici.</span><button class="back-btn" type="button" data-a="addmode">+ Ajouter un ami</button></div>';
+    pane.innerHTML='<div class="fm-head"><h3>Messages</h3><button type="button" class="back-btn" data-a="addmode">+ Ajouter un ami</button></div>'+(inbox.length?'<div class="fr-card"><h4>À traiter</h4>'+inboxHtml()+'</div>':'')+'<div class="fm-list">'+listH+'</div>';
+  }
+  function drawAdd(){
+    var link=inviteLink();
+    pane.innerHTML='<div class="fm-head"><button type="button" class="back-btn" data-a="backlist">← Messages</button><h3>Ajouter un ami</h3></div>'+
       '<div class="fr-card"><h4>Inviter un ami</h4><div class="fr-qr"><div id="fr-qrbox"></div><div class="fr-actions"><button class="back-btn" data-a="share" type="button">Partager l\'invitation</button><button class="back-btn" data-a="copy" type="button">Copier le lien</button><button class="back-btn" data-a="wa" type="button">WhatsApp</button><button class="back-btn" data-a="sms" type="button">SMS</button><button class="back-btn" data-a="dlqr" type="button">Télécharger le QR</button></div></div><div class="fr-link">'+esc(link)+'</div></div>'+
-      '<div class="fr-card"><h4>Ajouter un ami</h4><div class="fr-add"><input id="fr-code" placeholder="Colle le lien ou le code de ton ami"><button class="back-btn" data-a="addc" type="button">Ajouter</button></div><div class="fr-actions" style="margin-top:10px"><button class="back-btn" data-a="scan" type="button">Scanner un QR code</button></div></div>';
+      '<div class="fr-card"><h4>Ajouter avec un lien ou un code</h4><div class="fr-add"><input id="fr-code" placeholder="Colle le lien ou le code de ton ami"><button class="back-btn" data-a="addc" type="button">Ajouter</button></div><div class="fr-actions" style="margin-top:10px"><button class="back-btn" data-a="scan" type="button">Scanner un QR code</button></div></div>';
     var qb=pane.querySelector('#fr-qrbox'); try{ qb.appendChild(qrCanvas(link)); }catch(e){}
   }
   var stream=null, scanT=null;
@@ -8755,7 +8774,11 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     else if(a==='song'){ consume(m); try{ openDetail(m.p.aid,'anime'); }catch(e2){ toast('Introuvable','Cette fiche n\'existe pas.'); } }
     else if(a==='game'){ consume(m); joinGame(m.p.g==='imposter'?'imposter':'auction',String(m.p.code||'').toUpperCase().slice(0,5)); }
     else if(a==='send'){ openSend(f); }
-    else if(a==='chat'){ openThread(f); }
+    else if(a==='open'){ if(f) openThread(f); }
+    else if(a==='back'||a==='backlist'){ leaveThread(); paneMode='list'; renderPane(); }
+    else if(a==='addmode'){ leaveThread(); paneMode='add'; renderPane(); }
+    else if(a==='sendth'){ if(thFriend) openSend(thFriend); }
+    else if(a==='rmth'){ var tf=thFriend; if(tf&&window.confirm('Retirer '+tf.name+' de tes amis ?')){ friends=friends.filter(function(x){ return x.uid!==tf.uid; }); saveFriends(); leaveThread(); paneMode='list'; renderPane(); } }
     else if(a==='rm'){ if(window.confirm('Retirer '+f.name+' de tes amis ?')){ friends.splice(i,1); saveFriends(); renderPane(); } }
     else if(a==='share'){ if(navigator.share){ navigator.share({title:'ANIMEDEX',text:txt,url:link}).catch(function(){}); } else { copy(txt); } }
     else if(a==='copy'){ copy(link); }
@@ -8779,8 +8802,8 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
       $('fr-sr').innerHTML=results.map(function(s,i){ return '<div class="fr-row"><div class="fr-name">'+esc(s.title)+'<div style="font-weight:400;font-size:12px;color:var(--ink-faint)">'+esc(s.sub)+'</div></div><button class="pri" data-s="'+i+'">Envoyer</button></div>'; }).join(''); });
     $('fr-box').onclick=function(e){ if(e.target.id==='fr-cancel'){ closeM(); return; } var s=e.target.closest('button[data-s]'); if(s){ var r=results[+s.dataset.s]; closeM(); if(r.item){ doSend(f,'share',{k:'item',id:r.id,t:r.t,title:r.title},'La fiche est partie.'); return; } doSend(f,'share',{k:'song',title:r.title,anime:r.sub,aid:r.aid},'La musique est partie.'); return; } var g=e.target.closest('button[data-g]'); if(g){ closeM(); doSend(f,'share',{k:'game',g:g.dataset.g,code:g.dataset.c},'Invitation envoyée.'); } };
   }
-  function openFriends(){ switchView('community'); setTimeout(function(){ var t=document.querySelector('#cm-tabs [data-t="friends"]'); if(t) t.click(); },250); }
-  window.mxFriendsOpen=function(){ pane=$('cm-friends'); if(pane&&!pane._b){ pane._b=1; pane.addEventListener('click',onPane); } startSocial(); renderPane(); };
+  function openFriends(uid){ pendingOpen=uid||null; if(!uid) paneMode='list'; switchView('community'); setTimeout(function(){ var t=document.querySelector('#cm-tabs [data-t="friends"]'); if(t) t.click(); },250); }
+  window.mxFriendsOpen=function(){ pane=$('cm-friends'); if(pane&&!pane._b){ pane._b=1; pane.addEventListener('click',onPane); } startSocial(); tryPending(); renderPane(); };
   /* bouton « Envoyer à un ami » dans la fenêtre de partage d'un top */
   var sb=$('mx-share-box')||null;
   (function(){ var iv=setInterval(function(){ var row=document.querySelector('#mx-share-box .row'); if(!row) return; clearInterval(iv); var b=document.createElement('button'); b.id='mx-share-fr'; b.textContent='Envoyer à un ami'; row.appendChild(b); b.onclick=function(){ var k=window.__mxShareKind, u=me(); if(!u||!k) return; var fld=({anime:'topAnime',manga:'topManga',character:'topCharacters',op:'topOp',ed:'topEd',ost:'topOst'})[k]; window.mxSendTop(k,u[fld]||[],'Ton top est parti.'); }; },800); })();
@@ -8931,6 +8954,143 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
     var r=resolveItemByKey(currentDetailKey||''); if(!r||!r.item||!window.mxSendItem) return;
     window.mxSendItem(r.id,r.type,r.item.title);
   });
+})();
+
+/* ===== v22 : index A–Z, animation d'onglet, bulles de discussion ===== */
+(function(){
+  function escH(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  var css=document.createElement('style'); css.id='mx-v22-css'; css.textContent=[
+  /* animation d'onglet */
+  '#mx-sweep{position:fixed;left:0;right:0;top:0;height:4px;z-index:301;background:linear-gradient(90deg,#ff2e63,#22d3ee);transform-origin:0 50%;transform:scaleX(0);opacity:0;pointer-events:none}',
+  '#mx-sweep.go{animation:mxSweep .6s cubic-bezier(.7,0,.2,1)}',
+  '@keyframes mxSweep{0%{transform:scaleX(0);opacity:1}55%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}',
+  '.view.active{animation:mxViewIn .5s cubic-bezier(.16,1,.3,1) both}',
+  '@keyframes mxViewIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}',
+  '.view.mx-enter .grid .card{animation:mxCardIn .5s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(min(var(--ci,0),16)*30ms)}',
+  '@keyframes mxCardIn{from{opacity:0;transform:translateY(26px) scale(.97)}to{opacity:1;transform:none}}',
+  '@media (prefers-reduced-motion:reduce){.view.active{animation:none}#mx-sweep{display:none}.view.mx-enter .grid .card{animation:none}}',
+  /* index A–Z */
+  '.mx-az{position:sticky;top:var(--hh,64px);z-index:20;display:flex;gap:2px;overflow-x:auto;padding:8px 0;margin:0 0 14px;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}',
+  '.mx-az::-webkit-scrollbar{display:none}',
+  '.mx-az button{flex:1 0 auto;min-width:30px;height:34px;border:0;background:none;border-radius:8px;font:600 12.5px var(--mono);color:var(--ink);cursor:pointer;transition:background .15s,color .15s}',
+  '.mx-az button:hover:not(:disabled){background:var(--bg-alt)}',
+  '.mx-az button.on{background:var(--ink);color:var(--bg)}',
+  '.mx-az button:disabled{opacity:.22;cursor:default}',
+  '.card.mx-flash{outline:3px solid var(--ink);outline-offset:3px}',
+  /* avatars + bulles */
+  '.fm-av{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:50%;color:#fff;font:700 17px var(--body);flex:none}',
+  '.mb-day{text-align:center;margin:14px 0 6px}.mb-day span{font:10.5px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);background:var(--bg-alt);padding:3px 11px;border-radius:99px}',
+  '.mb-row{display:flex;gap:8px;padding:2px 12px;align-items:flex-end;animation:mxRise .22s ease both}',
+  '.mb-row:not(.grp){margin-top:10px}.mb-row.own{flex-direction:row-reverse}',
+  '.mb-av{width:30px;flex:none}.mb-av .fm-av{width:30px;height:30px;font-size:13px}',
+  '.mb-col{max-width:min(80%,540px);display:flex;flex-direction:column;align-items:flex-start;min-width:0}.mb-row.own .mb-col{align-items:flex-end}',
+  '.mb-name{font:600 11.5px var(--body);color:var(--ink-faint);margin:0 6px 3px}',
+  '.mb-bub{padding:9px 14px;border-radius:20px;border-bottom-left-radius:6px;background:var(--bg-alt);color:var(--ink);font-size:14.5px;line-height:1.42;overflow-wrap:anywhere;white-space:pre-wrap;cursor:default}',
+  '.mb-row.own .mb-bub{background:var(--ink);color:var(--bg);border-bottom-left-radius:20px;border-bottom-right-radius:6px}',
+  '.mb-meta{display:none;align-items:center;gap:10px;font:10px var(--mono);color:var(--ink-faint);margin:3px 8px 0}',
+  '.mb-row.show .mb-meta,.mb-row:hover .mb-meta{display:flex}',
+  '.mb-meta .cm-act{margin-left:0}',
+  '.mb-bub .th-card{display:flex;flex-direction:column;gap:7px;white-space:normal}.mb-bub .th-card button{align-self:flex-start;border:0;border-radius:99px;padding:7px 14px;font:700 12.5px var(--body);cursor:pointer;background:var(--ink);color:var(--bg)}',
+  '.mb-row.own .mb-bub .th-card button{background:var(--bg);color:var(--ink)}',
+  /* compositeur */
+  '#view-community .cm-box{border-radius:16px;overflow:hidden}',
+  '#view-community .cm-form{gap:8px;padding:10px;border-top:1px solid var(--line);align-items:center;position:relative}',
+  '#view-community .cm-form input{flex:1;border:2px solid var(--ink);border-radius:99px;padding:11px 16px;background:var(--bg)}',
+  '#view-community .cm-form button[type=submit],.fm-send{width:42px;height:42px;flex:none;border:0;border-radius:50%;background:var(--ink);color:var(--bg);font-size:16px;cursor:pointer;display:grid;place-items:center;padding:0;letter-spacing:0}',
+  '.cm-emo,.fm-ic{width:40px;height:40px;flex:none;border:0;border-radius:50%;background:var(--bg-alt);color:var(--ink);font-size:18px;cursor:pointer;display:grid;place-items:center;padding:0}',
+  '.cm-emo:hover,.fm-ic:hover{background:var(--line)}',
+  '.cm-emopop{display:flex;flex-wrap:wrap;gap:2px;padding:8px 10px;border-top:1px solid var(--line);background:var(--bg)}.cm-emopop[hidden]{display:none}.cm-emopop button{border:0;background:none;font-size:22px;padding:4px 6px;cursor:pointer;border-radius:8px}.cm-emopop button:hover{background:var(--bg-alt)}',
+  /* messagerie amis */
+  '.fm-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}.fm-head h3{font:400 22px var(--display)}',
+  '.fm-list{border:2px solid var(--ink);border-radius:16px;overflow:hidden;background:var(--bg)}',
+  '.fm-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:left;cursor:pointer}.fm-row:last-child{border-bottom:0}.fm-row:hover{background:var(--bg-alt)}',
+  '.fm-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.fm-mid b{font:600 15px var(--body)}.fm-mid small{font-size:13px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+  '.fm-row.unread .fm-mid b,.fm-row.unread .fm-mid small{color:var(--ink);font-weight:700}',
+  '.fm-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;font:10.5px var(--mono);color:var(--ink-faint)}.fm-badge{font-style:normal;background:var(--ink);color:var(--bg);border-radius:99px;min-width:20px;height:20px;padding:0 6px;display:grid;place-items:center;font:700 11px var(--body)}',
+  '.fm-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:34px 20px;color:var(--ink-faint);font-size:14px}.fm-empty b{color:var(--ink);font-size:16px}',
+  '.fm-thread{border:2px solid var(--ink);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:min(72vh,640px);background:var(--bg)}',
+  '.fm-th-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line)}.fm-th-head .fm-av{width:36px;height:36px;font-size:15px}.fm-th-name{font:600 16px var(--body)}.fm-grow{flex:1}',
+  '.fm-msgs{flex:1;overflow-y:auto;padding:6px 0 10px;-webkit-overflow-scrolling:touch}',
+  '.fm-comp{display:flex;gap:8px;align-items:center;padding:10px;border-top:1px solid var(--line)}.fm-comp input{flex:1;min-width:0;border:2px solid var(--ink);border-radius:99px;padding:11px 16px;font:15px var(--body);background:var(--bg);color:var(--ink);outline:none}',
+  '.fm-thread .th-note{padding:0 12px 8px;margin:0}',
+  '#view-community .cm-form .cm-emo{width:40px;height:40px;border:0;border-radius:50%;background:var(--bg-alt);color:var(--ink);font-size:18px;padding:0}',
+  '.fm-thread #fr-th{max-height:none;border:0;padding:6px 0 10px;margin:0;display:block;gap:0;flex:1;overflow-y:auto}',
+  '@media (max-width:640px){.fm-thread{height:calc(100svh - 330px);min-height:340px}.mb-col{max-width:84%}}'
+  ].join('\n');
+  document.head.appendChild(css);
+
+  /* avatar + bulles (utilisés par le chat et les amis) */
+  window.mxAvatar=function(name){ var n=String(name||'?'), h=0; for(var i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))%360; return '<span class="fm-av" style="background:hsl('+h+' 52% 44%)">'+escH(n.charAt(0).toUpperCase())+'</span>'; };
+  function dayLabel(d){ var n=new Date(), y=new Date(Date.now()-864e5); if(d.toDateString()===n.toDateString()) return 'Aujourd\'hui'; if(d.toDateString()===y.toDateString()) return 'Hier'; return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); }
+  window.mxBubbles=function(items,opts){
+    opts=opts||{}; var out='', lastDay='', prev=null;
+    items.forEach(function(m){
+      var d=new Date(m.ts||0), day=d.toDateString();
+      if(day!==lastDay){ out+='<div class="mb-day"><span>'+escH(dayLabel(d))+'</span></div>'; lastDay=day; prev=null; }
+      var grp=prev&&prev.uid===m.uid&&((m.ts||0)-(prev.ts||0))<5*60000;
+      var hh=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+      out+='<div class="mb-row'+(m.own?' own':'')+(grp?' grp':'')+'" data-id="'+escH(m.id)+'">'+
+        (m.own?'':'<span class="mb-av">'+(grp?'':window.mxAvatar(m.name))+'</span>')+
+        '<div class="mb-col">'+((!grp&&!m.own&&opts.showName)?'<div class="mb-name">'+escH(m.name||'Anonyme')+(m.admin?' <span class="cm-badge">Admin</span>':'')+'</div>':'')+
+        '<div class="mb-bub">'+m.body+'</div><div class="mb-meta"><span>'+hh+'</span>'+(m.acts?'<span class="cm-act">'+m.acts+'</span>':'')+'</div></div></div>';
+      prev=m;
+    });
+    return out;
+  };
+
+  /* animation au changement d'onglet */
+  var sw=document.createElement('div'); sw.id='mx-sweep'; document.body.appendChild(sw);
+  var _sv=window.switchView||switchView;
+  switchView=function(v){
+    try{ sw.classList.remove('go'); void sw.offsetWidth; sw.classList.add('go'); }catch(e){}
+    var r=_sv.apply(this,arguments);
+    setTimeout(function(){ var a=document.getElementById('view-'+v); if(a){ a.classList.add('mx-enter'); setTimeout(function(){ a.classList.remove('mx-enter'); },1100); } },120);
+    return r;
+  };
+
+  /* index A–Z */
+  function letterOf(t){ var c=String(t||'').trim().normalize('NFD').replace(/[̀-ͯ]/g,'').charAt(0).toUpperCase(); return /[A-Z]/.test(c)?c:'#'; }
+  var LET='#ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), bars={};
+  function hh(){ var h=document.querySelector('header'); document.documentElement.style.setProperty('--hh',(h?h.offsetHeight:64)+'px'); }
+  hh(); window.addEventListener('resize',hh);
+  ['anime','manga'].forEach(function(type){
+    var grid=document.getElementById('grid-'+type); if(!grid) return;
+    var bar=document.createElement('div'); bar.className='mx-az'; bar.setAttribute('role','navigation'); bar.setAttribute('aria-label','Aller à la lettre');
+    bar.innerHTML=LET.map(function(l){ return '<button type="button" data-l="'+l+'" disabled>'+l+'</button>'; }).join('');
+    grid.parentNode.insertBefore(bar,grid); bars[type]=bar;
+    bar.addEventListener('click',function(e){
+      var b=e.target.closest('button[data-l]'); if(!b||b.disabled) return;
+      var sel=document.getElementById('sort-'+type);
+      if(sel&&sel.value!=='title'){ sel.value='title'; sel.dispatchEvent(new Event('change')); }
+      setTimeout(function(){
+        var t=grid.querySelector('.card[data-l="'+b.dataset.l+'"]'); if(!t) return;
+        var off=(document.querySelector('header')?document.querySelector('header').offsetHeight:64)+bar.offsetHeight+10;
+        window.scrollTo({top:t.getBoundingClientRect().top+window.scrollY-off,behavior:'smooth'});
+        t.classList.add('mx-flash'); setTimeout(function(){ t.classList.remove('mx-flash'); },1400);
+      },70);
+    });
+  });
+  var _rg=renderGrid;
+  renderGrid=function(list,gridId,countId,type){
+    _rg.apply(this,arguments);
+    if((gridId!=='grid-anime'&&gridId!=='grid-manga')||!bars[type]) return;
+    var have={}; document.getElementById(gridId).querySelectorAll('.card').forEach(function(c,i){ var t=c.querySelector('.card-title'), l=letterOf(t&&t.textContent); c.dataset.l=l; c.style.setProperty('--ci',i); have[l]=1; });
+    bars[type].querySelectorAll('button').forEach(function(b){ b.disabled=!have[b.dataset.l]; });
+  };
+  /* lettre active pendant le défilement (tri par titre) */
+  var tick=false;
+  window.addEventListener('scroll',function(){
+    if(tick) return; tick=true; requestAnimationFrame(function(){ tick=false;
+      ['anime','manga'].forEach(function(type){
+        var v=document.getElementById('view-'+type); if(!v||!v.classList.contains('active')) return;
+        var sel=document.getElementById('sort-'+type), bar=bars[type]; if(!bar) return;
+        var on=null;
+        if(sel&&sel.value==='title'){ var lim=bar.getBoundingClientRect().bottom+4, cs=document.getElementById('grid-'+type).querySelectorAll('.card'); for(var i=0;i<cs.length;i++){ if(cs[i].getBoundingClientRect().bottom>lim){ on=cs[i].dataset.l; break; } } }
+        bar.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.dataset.l===on); });
+      });
+    });
+  },{passive:true});
+  try{ if(window.refreshAnime) refreshAnime(); if(window.refreshManga) refreshManga(); }catch(e){}
 })();
 </script>
 
