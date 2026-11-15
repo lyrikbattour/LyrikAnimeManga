@@ -28,6 +28,10 @@
     {
       "source": "/manga/:id",
       "destination": "/api/fiche?type=manga&id=:id"
+    },
+    {
+      "source": "/img/:f",
+      "destination": "/:f"
     }
   ]
 }
