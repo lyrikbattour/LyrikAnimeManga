@@ -33,5 +33,25 @@
       "source": "/img/:f",
       "destination": "/:f"
     }
+  ],
+  "headers": [
+    {
+      "source": "/([0-9a-f]{10}).jpg",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000"
+        }
+      ]
+    },
+    {
+      "source": "/img/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000"
+        }
+      ]
+    }
   ]
 }

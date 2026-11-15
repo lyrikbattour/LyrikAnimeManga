@@ -19,6 +19,7 @@
 <script>try{var t=localStorage.getItem('mx-theme');if(!t&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <meta name="theme-color" content="#0a0a0a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://s4.anilist.co">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module">
@@ -2893,6 +2894,23 @@ function listenLinks(trackName, context){
   const q = encodeURIComponent(trackName + ' ' + context);
   return { spotify:`https://open.spotify.com/search/${q}`, youtube:`https://www.youtube.com/results?search_query=${q}` };
 }
+// Couvertures des grilles : l'image n'est téléchargée que lorsque la carte approche de l'écran.
+function coverAttr(item, index){
+  const a = GRAYS[index % GRAYS.length], b = GRAYS[(index + 3) % GRAYS.length];
+  const ph = `background-image:linear-gradient(135deg, ${a}, ${b})`;
+  if(!item.image) return `style="${ph}"`;
+  if(!window.mxLazyBgOK) return `style="background-image:url('${item.image}')"`;
+  return `style="${ph}" data-bg="${String(item.image).replace(/"/g,'&quot;')}"`;
+}
+(function(){
+  if(!('IntersectionObserver' in window) || !('MutationObserver' in window)) return;
+  window.mxLazyBgOK = true;
+  const show = el => { const u = el.getAttribute('data-bg'); if(!u) return; el.removeAttribute('data-bg'); el.style.backgroundImage = "url('" + u.replace(/'/g,"%27") + "')"; };
+  const io = new IntersectionObserver(es => { es.forEach(e => { if(e.isIntersecting){ io.unobserve(e.target); show(e.target); } }); }, { rootMargin:'700px 0px' });
+  const scan = n => { if(n.nodeType !== 1) return; if(n.hasAttribute('data-bg')) io.observe(n); if(n.querySelectorAll) n.querySelectorAll('[data-bg]').forEach(x => io.observe(x)); };
+  const start = () => { new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(scan))).observe(document.body, { childList:true, subtree:true }); scan(document.body); };
+  if(document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
 function coverStyle(item, index){
   const a = GRAYS[index % GRAYS.length];
   const b = GRAYS[(index + 3) % GRAYS.length];
@@ -3147,7 +3165,7 @@ function renderGrid(list, gridId, countId, type){
     const metaLine = type==='anime' ? `${item.year} · ${item.seasons}` : `${item.author} · ${item.status}`;
     const fav = isFavorite(key);
     card.innerHTML = `
-      <div class="cover${item.image ? '' : ' placeholder'}" role="img" aria-label="Couverture de ${item.title}" style="${coverStyle(item, i)}">
+      <div class="cover${item.image ? '' : ' placeholder'}" role="img" aria-label="Couverture de ${item.title}" ${coverAttr(item, i)}>
         ${item.image ? '' : `<span class="mono">${initials(item.title)}</span>`}
         <button class="cover-fav-btn${fav ? ' active' : ''}" data-key="${key}" title="Favori">${fav ? '★' : '☆'}</button>
       </div>
@@ -5647,7 +5665,7 @@ function miniCard(it, type, i, onClick){
   const card = document.createElement('div');
   card.className = 'card';
   card.innerHTML = `
-    <div class="cover${it.image ? '' : ' placeholder'}" role="img" aria-label="Couverture de ${it.title}" style="${coverStyle(it, i)}">${it.image ? '' : `<span class="mono">${initials(it.title)}</span>`}</div>
+    <div class="cover${it.image ? '' : ' placeholder'}" role="img" aria-label="Couverture de ${it.title}" ${coverAttr(it, i)}>${it.image ? '' : `<span class="mono">${initials(it.title)}</span>`}</div>
     <div class="card-body"><span class="card-genre">${it.genres.join(' · ')}</span><div class="card-title">${it.title}</div></div>`;
   card.addEventListener('click', onClick);
   return card;
