@@ -6291,7 +6291,7 @@ function isHoneypotFilled(inputId){
 
   // ---------- défi du jour ----------
   const dd = document.createElement('div'); dd.id='mx-daily'; dd.setAttribute('role','dialog'); dd.setAttribute('aria-label','Défi du jour');
-  dd.innerHTML = '<div class="mx-box"><div class="mx-box-h"><div style="flex:1;padding:14px;font-family:var(--display);font-size:16px">Défi du jour</div><button type="button" class="mx-box-x" id="mx-dx" aria-label="Fermer">×</button></div><div id="mx-dbody"></div></div>';
+  dd.innerHTML = '<div class="mx-box"><div class="mx-box-h"><div id="mx-dtitle" style="flex:1;padding:14px;font-family:var(--display);font-size:16px">Défi du jour</div><button type="button" class="mx-box-x" id="mx-dx" aria-label="Fermer">×</button></div><div id="mx-dbody"></div></div>';
   document.body.appendChild(dd);
   function closeDaily(){ dd.classList.remove('open'); }
   dd.addEventListener('click', e=>{ if(e.target===dd) closeDaily(); }); $('#mx-dx').addEventListener('click', closeDaily);
@@ -6299,8 +6299,8 @@ function isHoneypotFilled(inputId){
   if(hero){ const b=document.createElement('button'); b.className='mx-daily-btn'; b.id='mx-daily-btn'; b.type='button'; b.textContent='🎯 DÉFI DU JOUR — 5 questions →'; hero.appendChild(b); b.addEventListener('click', openDaily); }
   const today = new Date(); const dkey = today.getFullYear()*10000+(today.getMonth()+1)*100+today.getDate();
   function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  function buildQuestions(){
-    const R = rng(dkey), pick = a => a[Math.floor(R()*a.length)];
+  function buildQuestions(seed){
+    const R = rng(seed==null ? dkey : seed), pick = a => a[Math.floor(R()*a.length)];
     const shuf = a => { a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(R()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
     const titlesOther = (it,n) => shuf(ANIME.filter(x=>x!==it).map(x=>x.title)).slice(0,n);
     const mk = (q,right,wrong) => { const o = shuf([right,...wrong]); return {q, o, a:o.indexOf(right)}; };
@@ -6321,6 +6321,7 @@ function isHoneypotFilled(inputId){
   }
   const DK = 'mx_daily_'+dkey;
   function openDaily(){
+    $('#mx-dtitle').textContent = 'Défi du jour';
     dd.classList.add('open'); let saved=null; try{ saved = JSON.parse(localStorage.getItem(DK)||'null'); }catch(e){}
     const Q = buildQuestions(), body = $('#mx-dbody'); let i=0; const marks=[];
     if(saved && saved.marks && saved.marks.length===5) return showEnd(saved.marks);
@@ -6337,7 +6338,8 @@ function isHoneypotFilled(inputId){
       const score = m.filter(Boolean).length, grid = m.map(x=>x?'🟩':'🟥').join('');
       const d = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0');
       const txt = `ANIMEDEX — Défi du jour ${d}\n${score}/5 ${grid}\n${location.origin}${location.pathname}`;
-      body.innerHTML = `<div class="mx-dq"><div class="n">RÉSULTAT</div><h3>${score}/5</h3><div class="mx-grid">${grid}</div><p style="font-size:13px;color:var(--ink-soft)">Reviens demain pour 5 nouvelles questions.</p><div class="mx-actions"><button type="button" class="mx-sharebtn" id="mx-dshare">Partager mon score</button></div></div>`;
+      body.innerHTML = `<div class="mx-dq"><div class="n">RÉSULTAT</div><h3>${score}/5</h3><div class="mx-grid">${grid}</div><p style="font-size:13px;color:var(--ink-soft)">Reviens demain pour 5 nouvelles questions.</p><div class="mx-actions"><button type="button" class="mx-sharebtn" id="mx-dshare">Partager mon score</button><button type="button" class="mx-sharebtn" id="mx-dduel">⚔️ Défier un ami</button></div></div>`;
+      $('#mx-dduel').addEventListener('click', ()=> shareDefi(dkey, m, $('#mx-dduel')));
       $('#mx-dshare').addEventListener('click', async ()=>{
         try{ if(navigator.share){ await navigator.share({text:txt}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
         try{ await navigator.clipboard.writeText(txt); $('#mx-dshare').textContent='✓ Copié'; }catch(e){ window.prompt('Copie ton score :', txt); }
@@ -6345,6 +6347,47 @@ function isHoneypotFilled(inputId){
     }
     showQ();
   }
+
+  // ---------- défi entre amis : mêmes 5 questions pour tout le monde via un lien (?defi=<graine>-<score>) ----------
+  function defiLink(seed, score){ return location.origin + '/?defi=' + seed.toString(36) + (score==null ? '' : '-' + score); }
+  async function shareDefi(seed, m, btn){
+    const score = m.filter(Boolean).length, grid = m.map(x=>x?'🟩':'🟥').join('');
+    const txt = `ANIMEDEX — Défi entre amis\nJ'ai fait ${score}/5 ${grid}\nTu fais mieux ? ${defiLink(seed, score)}`;
+    try{ if(navigator.share){ await navigator.share({text:txt}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+    try{ await navigator.clipboard.writeText(txt); if(btn) btn.textContent='✓ Lien copié'; }catch(e){ window.prompt('Copie ce défi :', txt); }
+  }
+  function openDefi(seed, rival){
+    $('#mx-dtitle').textContent = 'Défi entre amis';
+    dd.classList.add('open');
+    const Q = buildQuestions(seed), body = $('#mx-dbody'); let i=0; const marks=[];
+    function showQ(){
+      const q=Q[i];
+      body.innerHTML = `<div class="mx-dq"><div class="n">QUESTION ${i+1} / 5${rival==null?'':' · SCORE À BATTRE : '+rival+'/5'}</div><h3>${esc(q.q)}</h3>${q.o.map((o,k)=>`<button type="button" class="mx-opt" data-k="${k}">${esc(o)}</button>`).join('')}</div>`;
+      body.querySelectorAll('.mx-opt').forEach(b=>b.addEventListener('click', ()=>{
+        const k=+b.dataset.k; marks.push(k===q.a);
+        body.querySelectorAll('.mx-opt').forEach(x=>{ x.disabled=true; if(+x.dataset.k===q.a) x.classList.add('ok'); else if(x===b) x.classList.add('ko'); });
+        setTimeout(()=>{ i++; if(i<5) showQ(); else showEnd(); }, 900);
+      }));
+    }
+    function showEnd(){
+      const score = marks.filter(Boolean).length, grid = marks.map(x=>x?'🟩':'🟥').join('');
+      let verdict = 'Envoie ce défi à un ami : il aura exactement les mêmes questions.';
+      if(rival!=null) verdict = score>rival ? `Gagné ! Tu bats son ${rival}/5.` : (score===rival ? `Égalité : ${rival}/5 chacun.` : `Perdu : il fallait battre ${rival}/5.`);
+      body.innerHTML = `<div class="mx-dq"><div class="n">RÉSULTAT</div><h3>${score}/5</h3><div class="mx-grid">${grid}</div><p style="font-size:13px;color:var(--ink-soft)">${esc(verdict)}</p><div class="mx-actions"><button type="button" class="mx-sharebtn" id="mx-fshare">⚔️ ${rival==null?'Défier un ami':'Renvoyer le défi'}</button><button type="button" class="mx-sharebtn" id="mx-fnew">Nouveau défi</button></div></div>`;
+      $('#mx-fshare').addEventListener('click', ()=> shareDefi(seed, marks, $('#mx-fshare')));
+      $('#mx-fnew').addEventListener('click', ()=> openDefi(newSeed(), null));
+    }
+    showQ();
+  }
+  function newSeed(){ return 1 + Math.floor(Math.random()*2000000000); }
+  if(hero){ const b=document.createElement('button'); b.className='mx-daily-btn mx-rand-btn'; b.id='mx-defi-btn'; b.type='button'; b.textContent='⚔️ DÉFIER UN AMI'; hero.appendChild(b); b.addEventListener('click', ()=> openDefi(newSeed(), null)); }
+  (function(){
+    let m=null; try{ m = /^([0-9a-z]{1,8})(?:-([0-5]))?$/.exec(new URLSearchParams(location.search).get('defi')||''); }catch(e){}
+    if(!m) return;
+    const seed = parseInt(m[1],36); if(!(seed>0)) return;
+    try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
+    window.addEventListener('load', ()=> setTimeout(()=> openDefi(seed, m[2]==null ? null : +m[2]), 900));
+  })();
 
   syncDetailUI();
 })();
