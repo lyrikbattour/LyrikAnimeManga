@@ -1554,6 +1554,7 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
 </main>
 
 <footer>ANIMEDEX — projet de démonstration · fan-content non officiel<br>
+  <a class="footer-link" href="/anime">Tous les animés</a> · <a class="footer-link" href="/manga">Tous les mangas</a> ·
   <button class="footer-link" id="footer-privacy-link">Politique de confidentialité</button> · <button class="footer-link" id="footer-terms-link">CGU</button>
 </footer>
 
@@ -6205,7 +6206,7 @@ function isHoneypotFilled(inputId){
     $('#mx-status').addEventListener('change', e=>{ setSt(currentDetailKey, e.target.value); if(typeof refreshAnime==='function') refreshAnime(); if(typeof refreshManga==='function') refreshManga(); });
     $('#mx-share').addEventListener('click', async ()=>{
       const [t,id] = String(currentDetailKey).split(':');
-      const url = location.origin + location.pathname + '#' + t + '/' + id;
+      const url = location.origin + '/' + t + '/' + encodeURIComponent(id);
       try{ if(navigator.share){ await navigator.share({title:$('#detail-title').textContent, url}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
       try{ await navigator.clipboard.writeText(url); $('#mx-share').textContent='✓ Lien copié'; }catch(e){ window.prompt('Copie ce lien :', url); }
       setTimeout(()=>{ const b=$('#mx-share'); if(b) b.textContent='🔗 Copier le lien'; }, 1800);

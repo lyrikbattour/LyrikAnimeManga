@@ -2,9 +2,32 @@
   "redirects": [
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "lyrik-anime-manga.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "lyrik-anime-manga.vercel.app"
+        }
+      ],
       "destination": "https://animedexfr.fr/$1",
       "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/anime",
+      "destination": "/api/fiche?type=anime"
+    },
+    {
+      "source": "/manga",
+      "destination": "/api/fiche?type=manga"
+    },
+    {
+      "source": "/anime/:id",
+      "destination": "/api/fiche?type=anime&id=:id"
+    },
+    {
+      "source": "/manga/:id",
+      "destination": "/api/fiche?type=manga&id=:id"
     }
   ]
 }
