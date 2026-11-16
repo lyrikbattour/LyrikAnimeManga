@@ -1227,6 +1227,7 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
           <button class="back-btn" id="imp-on-quit-lobby-btn">✕ Quitter la salle</button>
           <p class="imp-instructions">Code de la salle — partage-le aux autres joueurs :</p>
           <div class="imp-room-code" id="imp-on-room-code"></div>
+          <button type="button" class="back-btn" id="imp-on-invite" style="display:block; margin:12px auto 0;">🔗 Inviter mes amis (copier le lien)</button>
           <div class="imp-instructions" style="margin-top:18px; margin-bottom:8px;">Joueurs connectés</div>
           <div class="imp-players-list" id="imp-on-lobby-players"></div>
           <button class="form-submit" id="imp-on-start-btn" style="max-width:260px; margin:20px auto 0; display:none;">Démarrer la partie</button>
@@ -1450,6 +1451,7 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
           <button class="back-btn" id="auc-on-quit-lobby-btn">✕ Quitter la salle</button>
           <p class="imp-instructions">Code de la salle — partage-le aux autres joueurs :</p>
           <div class="imp-room-code" id="auc-on-room-code"></div>
+          <button type="button" class="back-btn" id="auc-on-invite" style="display:block; margin:12px auto 0;">🔗 Inviter mes amis (copier le lien)</button>
           <div class="imp-instructions" style="margin-top:18px; margin-bottom:8px;" id="auc-on-lobby-info"></div>
           <div class="imp-players-list" id="auc-on-lobby-players"></div>
           <button class="form-submit" id="auc-on-start-btn" style="max-width:260px; margin:20px auto 0; display:none;">Démarrer les enchères</button>
@@ -6387,6 +6389,32 @@ function isHoneypotFilled(inputId){
     const seed = parseInt(m[1],36); if(!(seed>0)) return;
     try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
     window.addEventListener('load', ()=> setTimeout(()=> openDefi(seed, m[2]==null ? null : +m[2]), 900));
+  })();
+
+  // ---------- lien d'invitation pour les salles en ligne (?salle=i-CODE pour Imposteur, a-CODE pour Enchères) ----------
+  (function(){
+    const G = { i:{ name:"d'Imposteur", view:'imposter', mode:'imp-mode-online', tab:'imp-on-tab-join', code:'imp-on-join-code', pseudo:'imp-on-join-name', room:'imp-on-room-code', btn:'imp-on-invite' },
+                a:{ name:"d'Enchères", view:'auction', mode:'auc-mode-online-btn', tab:'auc-on-tab-join', code:'auc-on-join-code', pseudo:'auc-on-join-name', room:'auc-on-room-code', btn:'auc-on-invite' } };
+    const el = id => document.getElementById(id);
+    Object.keys(G).forEach(k=>{
+      const g = G[k], b = el(g.btn); if(!b) return;
+      b.addEventListener('click', async ()=>{
+        const code = (el(g.room).textContent||'').trim(); if(!code) return;
+        const txt = `Rejoins ma partie ${g.name} sur ANIMEDEX (code ${code}) : ${location.origin}/?salle=${k}-${code}`;
+        try{ if(navigator.share){ await navigator.share({text:txt}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+        try{ await navigator.clipboard.writeText(txt); const o=b.textContent; b.textContent='✓ Lien copié'; setTimeout(()=>{ b.textContent=o; }, 2000); }catch(e){ window.prompt('Copie ce lien :', txt); }
+      });
+    });
+    let m=null; try{ m = /^([ia])-([A-Z0-9]{5})$/.exec((new URLSearchParams(location.search).get('salle')||'').toUpperCase().replace(/^([IA])-/, (x,c)=>c.toLowerCase()+'-')); }catch(e){}
+    if(!m) return;
+    try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
+    const g = G[m[1]];
+    window.addEventListener('load', ()=> setTimeout(()=>{
+      try{
+        switchView(g.view); el(g.mode).click(); el(g.tab).click();
+        el(g.code).value = m[2]; el(g.pseudo).focus(); el(g.pseudo).scrollIntoView({block:'center'});
+      }catch(e){}
+    }, 900));
   })();
 
   syncDetailUI();
