@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png">
 <script>try{var t=localStorage.getItem('mx-theme');if(!t&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <link rel="alternate" hreflang="fr" href="https://animedexfr.fr/"><link rel="alternate" hreflang="en" href="https://animedexfr.fr/en"><link rel="alternate" hreflang="x-default" href="https://animedexfr.fr/">
-<script id="mx-lang-boot">(function(){var L=null,ls;try{ls=localStorage;L=ls.getItem("mx_lang")}catch(e){}var q=(location.search.match(/[?&]lang=(fr|en)/)||[])[1];if(q){L=q;try{ls.setItem("mx_lang",q)}catch(e){}}if(/^\/en(\/|$)/.test(location.pathname)){L="en";try{ls.setItem("mx_lang","en")}catch(e){}}else if(L==="en"&&!/bot|crawl|spider|slurp|lighthouse/i.test(navigator.userAgent)){location.replace("/en"+location.search+location.hash);L="redir"}window.MX_LANG=L==="en"?"en":"fr";if(MX_LANG==="en"){document.documentElement.lang="en";document.write('<script src="/data/en-959a63af89.js"><\/script>')}})();</script>
+<script id="mx-lang-boot">(function(){var L=null,ls;try{ls=localStorage;L=ls.getItem("mx_lang")}catch(e){}var q=(location.search.match(/[?&]lang=(fr|en)/)||[])[1];if(q){L=q;try{ls.setItem("mx_lang",q)}catch(e){}}if(/^\/en(\/|$)/.test(location.pathname)){L="en";try{ls.setItem("mx_lang","en")}catch(e){}}else if(L==="en"&&!/bot|crawl|spider|slurp|lighthouse/i.test(navigator.userAgent)){location.replace("/en"+location.search+location.hash);L="redir"}window.MX_LANG=L==="en"?"en":"fr";if(MX_LANG==="en"){document.documentElement.lang="en";document.write('<script src="/data/en-4229c25bae.js"><\/script>')}})();</script>
 <meta name="theme-color" content="#0a0a0a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://s4.anilist.co">
@@ -1797,6 +1797,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
 </div>
 
 <script src="/data/catalogue-a898b832dc.js"></script>
+<script src="/data/saison-ea5aa2f6b8.js"></script>
 <script>window.mxApplyEN&&mxApplyEN()</script>
 <script>
 // ============== HELPERS ==============
@@ -8437,8 +8438,55 @@ document.querySelectorAll('[data-mxlang]').forEach(lab);
 var mp=document.getElementById('mobile-nav-panel');if(mp&&!mp.querySelector('[data-mxlang]')){var m=document.createElement('button');m.type='button';m.className='mobile-nav-btn';m.setAttribute('data-mxlang','');m.setAttribute('data-noi18n','');lab(m);mp.appendChild(m)}
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-mxlang]');if(!b)return;e.preventDefault();e.stopPropagation();go(en?'fr':'en')},true);
 // suggestion pour les visiteurs non francophones
-try{var nl=(navigator.languages&&navigator.languages[0]||navigator.language||'fr').toLowerCase();if(!en&&!/^fr/.test(nl)&&!localStorage.getItem('mx_lang')&&!localStorage.getItem('mx_lang_hint')){localStorage.setItem('mx_lang_hint','1');setTimeout(function(){var d=document.createElement('div');d.setAttribute('data-noi18n','');d.style.cssText='position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;background:var(--ink);color:var(--bg);font:600 14px/1.3 Inter,sans-serif;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:4px 4px 0 var(--accent,#ff4d2e);max-width:calc(100vw - 32px)';d.innerHTML='<span>🇬🇧 ANIMEDEX is also available in English.</span><button type="button" style="font:700 12px Inter,sans-serif;padding:7px 10px;border:0;background:var(--accent,#ff4d2e);color:#fff;cursor:pointer">Switch</button><button type="button" aria-label="Close" style="font:700 16px Inter;background:none;border:0;color:inherit;cursor:pointer">✕</button>';d.children[1].onclick=function(){go('en')};d.children[2].onclick=function(){d.remove()};document.body.appendChild(d);setTimeout(function(){d.remove()},12000)},2500)}}catch(e){}
+try{var nl=(navigator.languages&&navigator.languages[0]||navigator.language||'fr').toLowerCase();if(!en&&!/^fr/.test(nl)&&!localStorage.getItem('mx_lang')&&!localStorage.getItem('mx_lang_hint')){localStorage.setItem('mx_lang_hint','1');setTimeout(function(){var d=document.createElement('div');d.setAttribute('data-noi18n','');d.style.cssText='position:fixed;left:50%;top:calc(84px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:9999;background:var(--ink);color:var(--bg);font:600 14px/1.3 Inter,sans-serif;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:4px 4px 0 var(--accent,#ff4d2e);max-width:calc(100vw - 32px)';d.innerHTML='<span>🇬🇧 ANIMEDEX is also available in English.</span><button type="button" style="font:700 12px Inter,sans-serif;padding:7px 10px;border:0;background:var(--accent,#ff4d2e);color:#fff;cursor:pointer">Switch</button><button type="button" aria-label="Close" style="font:700 16px Inter;background:none;border:0;color:inherit;cursor:pointer">✕</button>';d.children[1].onclick=function(){go('en')};d.children[2].onclick=function(){d.remove()};document.body.appendChild(d);setTimeout(function(){d.remove()},12000)},2500)}}catch(e){}
 })();
+</script>
+<style id="mx-v17-css">header .brand{flex-shrink:0}.header-right>*{flex-shrink:0}.header-right>#main-nav{flex-shrink:1;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}#main-nav::-webkit-scrollbar{display:none}#main-nav .nav-btn{flex-shrink:0}#mx17-info{margin:16px 0 4px;border:2px solid var(--ink);padding:14px 16px;max-width:640px;background:var(--bg)}
+#mx17-info .h{font:700 11px/1 var(--mono,monospace);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;gap:8px;align-items:center}
+#mx17-info .h b{background:var(--ink);color:var(--bg);padding:4px 7px}
+#mx17-info dl{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px;margin:0}
+#mx17-info dt{font:600 11px/1.6 var(--mono,monospace);letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint)}
+#mx17-info dd{margin:0;min-width:0;overflow-wrap:anywhere}
+#mx17-info .cd{font-weight:800;color:var(--accent,#ff4d2e)}
+#mx17-info .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+#mx17-info .acts a{font:600 12px/1 var(--mono,monospace);letter-spacing:.8px;text-transform:uppercase;text-decoration:none;color:var(--ink);border:1.5px solid var(--ink);padding:9px 11px}
+#mx17-info .acts a.pri{background:var(--ink);color:var(--bg)}
+.mx17-new{position:absolute;left:8px;top:8px;z-index:2;background:#ff3b8a;color:#fff;font:800 10px/1 var(--mono,monospace);letter-spacing:1px;padding:5px 6px;border:1.5px solid #000;pointer-events:none}
+</style>
+<script id="mx-v17-js">
+(function(){
+'use strict';
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var ST={RELEASING:'En cours de diffusion',FINISHED:'Terminé',NOT_YET_RELEASED:'Pas encore diffusé',HIATUS:'En pause'};
+var MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function dfr(iso){var p=iso.split('-');return (+p[2])+' '+MO[+p[1]-1]+' '+p[0]}
+function untilTxt(sec){var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);return d>0?d+' j '+h+' h':h>0?h+' h '+m+' min':m+' min'}
+function nextEp(x){if(!x.next)return null;var at=x.next.airingAt,ep=x.next.episode,now=Date.now()/1000;while(at<now){at+=7*86400;ep++}if(x.ep&&ep>x.ep)return null;return{ep:ep,at:at}}
+function box(it){var x=it.x,rows=[];
+ if(x.romaji&&x.romaji!==it.title)rows.push(['Titre japonais',esc(x.romaji)+(x.native?' · '+esc(x.native):'')]);
+ if(x.studio)rows.push(['Studio',esc(x.studio)]);
+ if(x.dir)rows.push(['Réalisation',esc(x.dir)]);
+ rows.push(['Format',esc(x.format)+(x.dur?' · '+x.dur+' min':'')]);
+ rows.push(['Épisodes',x.ep?String(x.ep):'Non annoncé']);
+ if(x.src)rows.push(['Adapté de',esc(x.src)]);
+ if(x.start)rows.push(['Début',dfr(x.start)]);
+ rows.push(['Statut',ST[x.st]||esc(x.st)]);
+ var n=nextEp(x);if(n)rows.push(['Prochain épisode','<span class="cd" data-at="'+n.at+'" data-ep="'+n.ep+'">Ép. '+n.ep+' dans '+untilTxt(n.at-Date.now()/1000)+'</span>']);
+ if(x.score)rows.push(['Note AniList',x.score+' / 100']);
+ var acts=[];if(x.tr)acts.push('<a class="pri" href="https://www.youtube.com/watch?v='+encodeURIComponent(x.tr)+'" target="_blank" rel="noopener">▶ Bande-annonce</a>');
+ (x.links||[]).forEach(function(l){acts.push('<a href="'+esc(l.u)+'" target="_blank" rel="noopener">Regarder sur '+esc(l.s)+'</a>')});
+ if(x.off)acts.push('<a href="'+esc(x.off)+'" target="_blank" rel="noopener">Site officiel</a>');
+ acts.push('<a href="https://anilist.co/anime/'+it.al+'" target="_blank" rel="noopener">AniList</a>');
+ return '<div class="h"><b>🌸 Automne 2026</b> Infos de la saison</div><dl>'+rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>'}).join('')+'</dl><div class="acts">'+acts.join('')+'</div>'}
+try{var _od=openDetail;openDetail=function(id,type){var r=_od.apply(this,arguments);try{var old=$('mx17-info');if(old)old.remove();['section-ost','section-oped'].forEach(function(k){var e=$(k);if(e)e.style.display=''});if(type!=='manga'){var it=ANIME.find(function(a){return a.id===id});if(it&&it.x){['section-ost','section-oped'].forEach(function(k){var e=$(k);if(e)e.style.display=((it.ost||[]).length||(it.openings||[]).length)?'':'none'});var meta=$('detail-meta');if(meta){var d=document.createElement('div');d.id='mx17-info';d.innerHTML=box(it);var anchor=$('mx15-sim')||meta;anchor.insertAdjacentElement('afterend',d)}}}}catch(e){}return r}}catch(e){}
+setInterval(function(){document.querySelectorAll('#mx17-info .cd').forEach(function(c){var s=+c.dataset.at-Date.now()/1000;if(s>0)c.textContent='Ép. '+c.dataset.ep+' dans '+untilTxt(s)})},30000);
+// badge « NOUVEAU » sur les cartes des séries de la saison
+var NEWID={};try{ANIME.forEach(function(a){if(a.x)NEWID[a.id]=1})}catch(e){}
+function badge(){document.querySelectorAll('.card .cover-fav-btn[data-key^="anime:"]').forEach(function(b){var cv=b.parentElement;if(!cv||cv.__mx17)return;cv.__mx17=1;var id=b.getAttribute('data-key').slice(6);if(!NEWID[id])return;if(getComputedStyle(cv).position==='static')cv.style.position='relative';var t=document.createElement('span');t.className='mx17-new';t.textContent='SAISON';cv.appendChild(t)})}
+new MutationObserver(function(){clearTimeout(badge.t);badge.t=setTimeout(badge,120)}).observe(document.body,{childList:true,subtree:true});badge();
+})();
+
 </script>
 </body>
 </html>
