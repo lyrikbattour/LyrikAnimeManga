@@ -143,8 +143,11 @@ function pageItem(it, type) {
     it.year ? `<span class="soft">${esc(it.year)}</span>` : '',
     it.author ? `<span class="soft">${esc(it.author)}</span>` : '',
     it.status ? `<span class="soft">${esc(it.status)}</span>` : '',
-    it.seasons ? `<span class="soft">${esc(it.seasons)}</span>` : ''
+    it.seasons ? `<span class="soft">${esc(it.seasons)}</span>` : '',
+    it.x && it.x.studio ? `<span class="soft">Studio ${esc(it.x.studio)}</span>` : ''
   ].join('');
+  const X = it.x || null;
+  const xtra = X ? `${X.tr ? `<a class="btn" href="https://www.youtube.com/watch?v=${encodeURIComponent(X.tr)}" target="_blank" rel="noopener">▶ ${LG === 'en' ? 'Trailer' : 'Bande-annonce'}</a>` : ''}${(X.links || []).slice(0, 3).map(l => `<a class="btn" href="${esc(l.u)}" target="_blank" rel="noopener">${LG === 'en' ? 'Watch on' : 'Regarder sur'} ${esc(l.s)}</a>`).join('')}` : '';
   const chars = (it.characters || []).map(c => `<li>${c.image ? `<img loading="lazy" src="${esc(img(c.image))}" alt="" width="56" height="56">` : ''}<div><b>${esc(c.name)}</b>${c.role ? `<em>${esc(c.role)}</em>` : ''}${c.desc ? `<p>${esc(c.desc)}</p>` : ''}</div></li>`).join('');
   const list = (h, arr) => arr && arr.length ? `<div><h3>${h}</h3><ul>${arr.map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>` : '';
   const music = isM ? '' : [list('Openings', it.openings), list('Endings', it.endings), list('OST', it.ost)].join('');
@@ -164,8 +167,9 @@ function pageItem(it, type) {
     <p class="sum">${esc(it.summary)}</p>
     <div class="cta">
       <a class="btn main" href="${P}/#${type}/${it.id}">${L.open}</a>
-      ${isM ? '' : `<a class="btn" href="${P}/#music/${it.id}">${L.listen}</a>`}
+      ${isM || !((it.openings || []).length || (it.ost || []).length) ? '' : `<a class="btn" href="${P}/#music/${it.id}">${L.listen}</a>`}
       <a class="btn" href="${P}/">${L.games2}</a>
+      ${xtra}
     </div>
   </div>
 </div>
