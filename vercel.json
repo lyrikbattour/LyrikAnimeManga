@@ -22,8 +22,16 @@
       "destination": "/api/fiche?type=manga"
     },
     {
+      "source": "/anime/:id/similaires",
+      "destination": "/api/fiche?type=anime&id=:id&sim=1"
+    },
+    {
       "source": "/anime/:id",
       "destination": "/api/fiche?type=anime&id=:id"
+    },
+    {
+      "source": "/manga/:id/similaires",
+      "destination": "/api/fiche?type=manga&id=:id&sim=1"
     },
     {
       "source": "/manga/:id",
@@ -50,6 +58,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=2592000"
+        }
+      ]
+    },
+    {
+      "source": "/data/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
