@@ -71,7 +71,7 @@ function shell({ title, desc, path, image, body, ld }) {
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${url}"><meta property="og:image" content="${esc(image || SITE + '/og-image.jpg')}">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" href="/icon-192-v2.png"><link rel="apple-touch-icon" href="/apple-touch-icon-v2.png">
 <script>try{var t=localStorage.getItem('mx-theme');if(!t&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
