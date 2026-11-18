@@ -10,9 +10,42 @@
       ],
       "destination": "https://animedexfr.fr/$1",
       "permanent": true
+    },
+    {
+      "source": "/en/",
+      "destination": "/en",
+      "permanent": true
     }
   ],
   "rewrites": [
+    {
+      "source": "/en",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/en/anime",
+      "destination": "/api/fiche?type=anime&lang=en"
+    },
+    {
+      "source": "/en/manga",
+      "destination": "/api/fiche?type=manga&lang=en"
+    },
+    {
+      "source": "/en/anime/:id/similar",
+      "destination": "/api/fiche?type=anime&id=:id&sim=1&lang=en"
+    },
+    {
+      "source": "/en/anime/:id",
+      "destination": "/api/fiche?type=anime&id=:id&lang=en"
+    },
+    {
+      "source": "/en/manga/:id/similar",
+      "destination": "/api/fiche?type=manga&id=:id&sim=1&lang=en"
+    },
+    {
+      "source": "/en/manga/:id",
+      "destination": "/api/fiche?type=manga&id=:id&lang=en"
+    },
     {
       "source": "/anime",
       "destination": "/api/fiche?type=anime"

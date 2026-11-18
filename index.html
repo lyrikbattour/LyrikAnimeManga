@@ -18,6 +18,8 @@
 <link rel="icon" href="/icon-192-v2.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png">
 <script>try{var t=localStorage.getItem('mx-theme');if(!t&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
+<link rel="alternate" hreflang="fr" href="https://animedexfr.fr/"><link rel="alternate" hreflang="en" href="https://animedexfr.fr/en"><link rel="alternate" hreflang="x-default" href="https://animedexfr.fr/">
+<script id="mx-lang-boot">(function(){var L=null,ls;try{ls=localStorage;L=ls.getItem("mx_lang")}catch(e){}var q=(location.search.match(/[?&]lang=(fr|en)/)||[])[1];if(q){L=q;try{ls.setItem("mx_lang",q)}catch(e){}}if(/^\/en(\/|$)/.test(location.pathname)){L="en";try{ls.setItem("mx_lang","en")}catch(e){}}else if(L==="en"&&!/bot|crawl|spider|slurp|lighthouse/i.test(navigator.userAgent)){location.replace("/en"+location.search+location.hash);L="redir"}window.MX_LANG=L==="en"?"en":"fr";if(MX_LANG==="en"){document.documentElement.lang="en";document.write('<script src="/data/en-959a63af89.js"><\/script>')}})();</script>
 <meta name="theme-color" content="#0a0a0a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://s4.anilist.co">
@@ -902,6 +904,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
       <button class="nav-btn" data-view="imposter">Imposter</button>
       <button class="nav-btn" data-view="auction">Enchères</button>
     </nav>
+    <button class="mx-lang" type="button" data-mxlang data-noi18n title="English version" aria-label="Switch language">EN</button>
     <div class="auth-area" id="auth-area">
       <button class="btn-auth" id="open-auth">Se connecter</button>
     </div>
@@ -1715,7 +1718,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
 
 <footer>ANIMEDEX — projet de démonstration · fan-content non officiel<br>
   <a class="footer-link" href="/anime">Tous les animés</a> · <a class="footer-link" href="/manga">Tous les mangas</a> ·
-  <button class="footer-link" id="footer-privacy-link">Politique de confidentialité</button> · <button class="footer-link" id="footer-terms-link">CGU</button>
+  <button class="footer-link" id="footer-privacy-link">Politique de confidentialité</button> · <button class="footer-link" id="footer-terms-link">CGU</button> · <button class="footer-link mx-lang-f" type="button" data-mxlang data-noi18n>EN</button>
 </footer>
 
 <div class="modal-overlay" id="modal-overlay">
@@ -1794,6 +1797,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
 </div>
 
 <script src="/data/catalogue-a898b832dc.js"></script>
+<script>window.mxApplyEN&&mxApplyEN()</script>
 <script>
 // ============== HELPERS ==============
 function listenLinks(trackName, context){
@@ -8364,7 +8368,7 @@ function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);
 function fit(g,t,max,size,font){var s=size;g.font=font.replace('#',s);while(g.measureText(t).width>max&&s>10){s-=4;g.font=font.replace('#',s)}return s}
 
 // o = {label, big, sub, marks?, chips?[], line, accent}
-async function render(o){await fonts();var W=1080,H=1920,c=document.createElement('canvas');c.width=W;c.height=H;var g=c.getContext('2d');var A=o.accent||'#ff3b8a';
+async function render(o){await fonts();var _t=window.mxT||function(x){return x};o=Object.assign({},o,{label:_t(o.label),big:_t(o.big),sub:_t(o.sub),line:_t(o.line||'')});var W=1080,H=1920,c=document.createElement('canvas');c.width=W;c.height=H;var g=c.getContext('2d');var A=o.accent||'#ff3b8a';
  var bg=await img('/img/intro-rue-p.webp');g.fillStyle='#0b0614';g.fillRect(0,0,W,H);
  if(bg){var s=Math.max(W/bg.width,H/bg.height),bw=bg.width*s,bh=bg.height*s;g.drawImage(bg,(W-bw)/2,(H-bh)/2,bw,bh)}
  var gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(8,3,18,.82)');gr.addColorStop(.45,'rgba(8,3,18,.45)');gr.addColorStop(1,'rgba(8,3,18,.9)');g.fillStyle=gr;g.fillRect(0,0,W,H);
@@ -8396,7 +8400,7 @@ async function render(o){await fonts();var W=1080,H=1920,c=document.createElemen
  g.font='800 54px Inter, sans-serif';var u='animedexfr.fr',uw=g.measureText(u).width+90;g.fillStyle='#ffe14d';rr(g,W/2-uw/2,H-140,uw,96,48);g.fill();g.lineWidth=6;g.strokeStyle='#000';g.stroke();g.fillStyle='#000';g.fillText(u,W/2,H-74);
  return c}
 async function share(o,btn){if(btn)btn.disabled=true;try{var c=await render(o);var blob=await new Promise(function(r){c.toBlob(r,'image/png')});var file=new File([blob],'animedex-'+(o.file||'score')+'.png',{type:'image/png'});
-  var txt=(o.text||'Viens me battre sur ANIMEDEX !')+' https://animedexfr.fr';
+  var _t2=window.mxT||function(x){return x};var txt=_t2(o.text||'Viens me battre sur ANIMEDEX !')+(window.MX_LANG==='en'?' https://animedexfr.fr/en':' https://animedexfr.fr');
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:txt});window.mxEvt&&window.mxEvt('share')}catch(e){}}
   else{var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000);toast('Image enregistrée 📸','Poste-la en story TikTok ou Instagram !');window.mxEvt&&window.mxEvt('share')}}
  catch(e){toast('Impossible de créer l\'image','Réessaie dans un instant.')}if(btn)btn.disabled=false}
@@ -8420,9 +8424,21 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
  share({label:'Ma progression',big:'NIV. '+l,chips:ch,sub:'« '+ti+' » · '+x+' XP',line:ch.length+' badge'+(ch.length>1?'s':'')+' débloqué'+(ch.length>1?'s':''),accent:'#ffb347',file:'niveau',text:'Je suis niveau '+l+' (« '+ti+' ») sur ANIMEDEX !'},b)});
 var mo=new MutationObserver(function(){document.querySelectorAll('.mx14-row').forEach(function(r){if(r.querySelector('[data-lb]')&&!r.querySelector('[data-shlvl]')){var b=document.createElement('button');b.type='button';b.className='mx14-btn';b.dataset.shlvl='1';b.textContent='📸 Partager mon niveau';r.appendChild(b)}})});mo.observe(document.body,{childList:true,subtree:true});
 // lien « Si tu as aimé » dans la fiche de l'appli
-try{var _od=openDetail;openDetail=function(id,type){var r=_od.apply(this,arguments);try{var meta=$('detail-meta'),it=(type==='manga'?MANGA:ANIME).find(function(x){return x.id===id});if(meta&&it){var a=$('mx15-sim');if(!a){a=document.createElement('a');a.id='mx15-sim';a.style.cssText='display:inline-block;margin-top:12px;border:2px solid currentColor;padding:8px 12px;font:700 13px/1.2 Inter,sans-serif;text-decoration:none;color:inherit';meta.insertAdjacentElement('afterend',a)}a.href='/'+type+'/'+encodeURIComponent(id)+'/similaires';a.textContent='🎯 Si tu as aimé '+it.title+' : 10 conseils →'}}catch(e){}return r}}catch(e){}
+try{var _od=openDetail;openDetail=function(id,type){var r=_od.apply(this,arguments);try{var meta=$('detail-meta'),it=(type==='manga'?MANGA:ANIME).find(function(x){return x.id===id});if(meta&&it){var a=$('mx15-sim');if(!a){a=document.createElement('a');a.id='mx15-sim';a.style.cssText='display:inline-block;margin-top:12px;border:2px solid currentColor;padding:8px 12px;font:700 13px/1.2 Inter,sans-serif;text-decoration:none;color:inherit';meta.insertAdjacentElement('afterend',a)}a.href=(window.MX_LANG==='en'?'/en/':'/')+type+'/'+encodeURIComponent(id)+(window.MX_LANG==='en'?'/similar':'/similaires');a.textContent='🎯 Si tu as aimé '+it.title+' : 10 conseils →'}}catch(e){}return r}}catch(e){}
 })();
 
+</script>
+<style id="mx-v16-css">.mx-lang{font:700 11px/1 var(--mono,monospace);letter-spacing:1px;border:1.5px solid var(--ink);background:var(--bg);color:var(--ink);padding:7px 8px;cursor:pointer;margin-right:6px}.mx-lang:hover{background:var(--ink);color:var(--bg)}.header-right .mx-lang{display:none}@media(min-width:1500px){.header-right .mx-lang{display:inline-block}}.mx-lang-f{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}</style>
+<script id="mx-v16-js">
+(function(){var en=window.MX_LANG==='en';
+function go(l){try{localStorage.setItem('mx_lang',l)}catch(e){}var h=location.hash,q=location.search.replace(/([?&])lang=(fr|en)&?/,'$1').replace(/[?&]$/,'');location.href=(l==='en'?'/en':'/')+(l==='fr'?(q?q+'&':'?')+'lang=fr':q)+h}
+function lab(b){b.textContent=b.classList.contains('mx-lang-f')?(en?'🇫🇷 Version française':'🇬🇧 English version'):b.classList.contains('mobile-nav-btn')?(en?'🌐 Version française':'🌐 English version'):(en?'FR':'EN');b.title=en?'Version française':'English version'}
+document.querySelectorAll('[data-mxlang]').forEach(lab);
+var mp=document.getElementById('mobile-nav-panel');if(mp&&!mp.querySelector('[data-mxlang]')){var m=document.createElement('button');m.type='button';m.className='mobile-nav-btn';m.setAttribute('data-mxlang','');m.setAttribute('data-noi18n','');lab(m);mp.appendChild(m)}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-mxlang]');if(!b)return;e.preventDefault();e.stopPropagation();go(en?'fr':'en')},true);
+// suggestion pour les visiteurs non francophones
+try{var nl=(navigator.languages&&navigator.languages[0]||navigator.language||'fr').toLowerCase();if(!en&&!/^fr/.test(nl)&&!localStorage.getItem('mx_lang')&&!localStorage.getItem('mx_lang_hint')){localStorage.setItem('mx_lang_hint','1');setTimeout(function(){var d=document.createElement('div');d.setAttribute('data-noi18n','');d.style.cssText='position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;background:var(--ink);color:var(--bg);font:600 14px/1.3 Inter,sans-serif;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:4px 4px 0 var(--accent,#ff4d2e);max-width:calc(100vw - 32px)';d.innerHTML='<span>🇬🇧 ANIMEDEX is also available in English.</span><button type="button" style="font:700 12px Inter,sans-serif;padding:7px 10px;border:0;background:var(--accent,#ff4d2e);color:#fff;cursor:pointer">Switch</button><button type="button" aria-label="Close" style="font:700 16px Inter;background:none;border:0;color:inherit;cursor:pointer">✕</button>';d.children[1].onclick=function(){go('en')};d.children[2].onclick=function(){d.remove()};document.body.appendChild(d);setTimeout(function(){d.remove()},12000)},2500)}}catch(e){}
+})();
 </script>
 </body>
 </html>
