@@ -2,13 +2,13 @@
 // Comme tout le contenu (images, données) est intégré directement dans index.html,
 // mettre index.html en cache suffit à rendre tout le catalogue consultable hors-ligne.
 
-const CACHE_NAME = 'animedex-cache-v1';
+const CACHE_NAME = 'animedex-cache-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/icon-192-v2.png',
+  '/icon-512-v2.png'
 ];
 
 self.addEventListener('install', (event) => {
