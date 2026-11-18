@@ -57,6 +57,7 @@ h2{font-family:var(--display);font-size:22px;letter-spacing:-.4px;margin:44px 0 
 .lede{color:var(--ink-soft);max-width:62ch;margin-top:10px}
 footer{border-top:2px solid var(--ink);padding:22px 16px;font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-align:center;line-height:1.9}
 a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.recos{list-style:none;margin:0;padding:0;display:grid;gap:14px}.rc{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;border:1.5px solid var(--ink);padding:12px;background:var(--bg)}.rc img{width:96px;height:144px;object-fit:cover;border:1.5px solid var(--ink);display:block}.rc h3{margin:2px 0 4px;font-size:18px}.rc h3 a{color:inherit}.rc p{margin:4px 0;line-height:1.5}.rc .why{font-family:var(--mono,monospace);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 @media(max-width:600px){.top{grid-template-columns:1fr}.top img{max-width:210px}header nav a{padding:7px 8px;font-size:10px}}
 `;
 
@@ -138,7 +139,7 @@ ${music ? `<h2>Musiques de ${esc(it.title)}</h2><div class="cols">${music}</div>
 <h2>Où trouver ${esc(it.title)}</h2>
 <div class="aff">${aff.map(a => `<a href="${amazon(a[1])}" target="_blank" rel="sponsored nofollow noopener">${a[0]}</a>`).join('')}</div>
 <p class="note">Liens affiliés Amazon : ANIMEDEX peut toucher une commission, sans coût pour toi.</p>
-${rel.length ? `<h2>Dans le même genre</h2><ul class="grid">${rel.map(x => card(x, type)).join('')}</ul>` : ''}`;
+${rel.length ? `<h2>Dans le même genre</h2><ul class="grid">${rel.map(x => card(x, type)).join('')}</ul><div class="cta"><a class="btn main" href="/${type}/${it.id}/similaires">Si tu as aimé ${esc(it.title)} : nos 10 conseils →</a></div>` : ''}`;
   const ld = [{
     '@context': 'https://schema.org', '@type': isM ? 'ComicSeries' : 'TVSeries',
     name: it.title, description: it.summary, genre: it.genres, image: img(it.image), inLanguage: 'ja',
@@ -153,6 +154,61 @@ ${rel.length ? `<h2>Dans le même genre</h2><ul class="grid">${rel.map(x => card
       { '@type': 'ListItem', position: 3, name: it.title, item: `${SITE}/${type}/${it.id}` }]
   }];
   return shell({ title, desc, path: `/${type}/${it.id}`, image: img(it.image), body, ld });
+}
+
+
+// ----- Recommandations « Si tu as aimé X » -----
+const DEMO = new Set(['Shonen', 'Seinen', 'Shojo', 'Josei', 'Kodomo']);
+function simScore(a, b) {
+  const ga = new Set(a.genres || []), gb = new Set(b.genres || []);
+  let inter = 0; ga.forEach(g => { if (gb.has(g)) inter++; });
+  if (!inter) return 0;
+  const uni = new Set([...ga, ...gb]).size;
+  let sc = inter / uni * 10 + inter;
+  ga.forEach(g => { if (DEMO.has(g) && gb.has(g)) sc += 1.5; });
+  const ya = parseInt(a.year, 10), yb = parseInt(b.year, 10);
+  if (ya && yb) sc += Math.max(0, 2 - Math.abs(ya - yb) / 6);
+  const ta = a.title.toLowerCase().split(/[^a-z0-9]+/)[0], tb = b.title.toLowerCase().split(/[^a-z0-9]+/)[0];
+  if (ta.length > 3 && ta === tb) sc -= 6; // évite de recommander la même franchise
+  return sc;
+}
+function recos(it, type, n) {
+  return DATA[type].filter(x => x.id !== it.id && x.title !== it.title)
+    .map(x => [x, simScore(it, x)]).filter(p => p[1] > 0)
+    .sort((a, b) => b[1] - a[1]).slice(0, n).map(p => p[0]);
+}
+function shared(a, b) { const g = new Set(a.genres || []); return (b.genres || []).filter(x => g.has(x)); }
+function recoItem(x, it, type, i) {
+  const why = shared(it, x).slice(0, 3).join(', ');
+  return `<li class="rc"><a href="/${type}/${x.id}"><img loading="lazy" src="${esc(img(x.image))}" alt="" width="120" height="180"></a><div>
+<p class="kind">${i + 1}. ${type === 'manga' ? 'Manga' : 'Animé'}${x.year ? ' · ' + esc(x.year) : ''}</p>
+<h3><a href="/${type}/${x.id}">${esc(x.title)}</a></h3>
+<p class="why">Point commun : ${esc(why)}</p>
+<p>${esc(cut(x.summary, 210))}</p></div></li>`;
+}
+function pageSimilar(it, type) {
+  const isM = type === 'manga', other = isM ? 'anime' : 'manga';
+  const main = recos(it, type, 10), cross = recos(it, other, 4);
+  const unit = isM ? 'mangas à lire' : 'animés à regarder';
+  const title = `Si tu as aimé ${it.title} : ${main.length} ${unit} ensuite | ANIMEDEX`;
+  const desc = cut(`Tu as aimé ${it.title} ? Voici ${main.length} ${isM ? 'mangas' : 'animés'} du même genre (${(it.genres || []).slice(0, 3).join(', ')}) à découvrir, avec la raison de chaque conseil.`, 158);
+  const body = `
+<p class="crumb"><a href="/">Accueil</a> / <a href="/${type}">${LABEL[type]}</a> / <a href="/${type}/${it.id}">${esc(it.title)}</a> / Recommandations</p>
+<div class="top"><img src="${esc(img(it.image))}" alt="Couverture de ${esc(it.title)}" width="230" height="345"><div>
+<p class="kind">Recommandations</p><h1>Si tu as aimé ${esc(it.title)}</h1>
+<p class="lede">${main.length} ${unit} ensuite, choisis pour leurs points communs avec ${esc(it.title)} : ${esc((it.genres || []).join(', '))}.</p>
+<div class="cta"><a class="btn main" href="/${type}/${it.id}">Revoir la fiche de ${esc(it.title)}</a><a class="btn" href="/#${type}/${it.id}">Ouvrir dans l'appli</a></div></div></div>
+<h2>${isM ? 'Les mangas à lire ensuite' : 'Les animés à regarder ensuite'}</h2>
+<ol class="recos">${main.map((x, i) => recoItem(x, it, type, i)).join('')}</ol>
+${cross.length ? `<h2>${isM ? 'En animé aussi' : 'À lire en manga'}</h2><ul class="grid">${cross.map(x => card(x, other)).join('')}</ul>` : ''}
+<p class="note">Conseils calculés à partir des genres, de la cible et de l'époque de chaque série du catalogue ANIMEDEX.</p>`;
+  const ld = [{ '@context': 'https://schema.org', '@type': 'ItemList', name: `Si tu as aimé ${it.title}`, itemListElement: main.map((x, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/${type}/${x.id}`, name: x.title })) },
+    { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Accueil', item: SITE + '/' },
+      { '@type': 'ListItem', position: 2, name: LABEL[type], item: `${SITE}/${type}` },
+      { '@type': 'ListItem', position: 3, name: it.title, item: `${SITE}/${type}/${it.id}` },
+      { '@type': 'ListItem', position: 4, name: 'Recommandations', item: `${SITE}/${type}/${it.id}/similaires` }] }];
+  return shell({ title, desc, path: `/${type}/${it.id}/similaires`, image: img(it.image), body, ld });
 }
 
 function pageList(type) {
@@ -194,5 +250,5 @@ module.exports = (req, res) => {
     return res.status(404).send(notFound(type));
   }
   res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
-  return res.status(200).send(pageItem(it, type));
+  return res.status(200).send(q.sim ? pageSimilar(it, type) : pageItem(it, type));
 };
