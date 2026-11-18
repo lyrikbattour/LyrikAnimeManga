@@ -671,91 +671,142 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ANIMEDEX","url":"https://animedexfr.fr/","inLanguage":"fr","description":"Encyclopédie anime & manga : fiches, personnages, OST, quiz et jeux entre amis."}</script>
 </head>
 <body>
-<!-- ==== ANIMEDEX — intro 3D (planète + lunes) ==== -->
-<style id="dx-intro-css">
-#dx-intro{position:fixed;inset:0;z-index:2147483000;background:radial-gradient(ellipse at 50% 45%,#2b1055 0%,#14072b 45%,#05020c 100%);color:#fff;overflow:hidden;font-family:Inter,system-ui,sans-serif;transition:opacity .55s ease,transform .55s ease;touch-action:none;user-select:none;-webkit-user-select:none}
+<!-- ==== ANIMEDEX — intro rue néon (manga) ==== -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E3%82%A2%E3%83%8B%E3%83%A1%E3%83%9E%E3%83%B3%E3%82%AC%E4%BB%8A%E6%97%A5%E3%82%AF%E3%82%A4%E3%82%BA%E5%AF%BE%E6%B1%BA%E9%9F%B3%E6%A5%BD%E5%81%BD%E8%80%85%E7%AB%B6%E5%A3%B2%E3%82%B4">
+<style id="dx-intro-css">#dx-intro{position:fixed;inset:0;z-index:2147483000;background:#07040d;overflow:hidden;color:#fff;font-family:Inter,system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation;transition:opacity .5s}
 #dx-intro[hidden]{display:none}
-#dx-intro.out{opacity:0;transform:scale(1.06);pointer-events:none}
-#dx-intro canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;opacity:0;transition:opacity .8s}
-#dx-intro.gl-ready canvas{opacity:1}
-#dx-intro .dx-top{position:absolute;left:0;right:0;top:max(22px,env(safe-area-inset-top));text-align:center;pointer-events:none;z-index:3;animation:dxIn .9s .2s both}
-#dx-intro .dx-logo{font-family:'Archivo Black',Inter,sans-serif;font-size:clamp(34px,6.4vw,64px);letter-spacing:.04em;line-height:1;text-shadow:0 0 28px rgba(255,94,138,.55)}
-#dx-intro .dx-logo b{background:linear-gradient(90deg,#ff5e8a,#ffb347);-webkit-background-clip:text;background-clip:text;color:transparent}
-#dx-intro .dx-sub{margin-top:10px;font-size:clamp(13px,1.8vw,17px);letter-spacing:.32em;text-transform:uppercase;color:#e9d5ff;opacity:.85}
-#dx-intro .dx-moons{position:absolute;inset:0;pointer-events:none;z-index:2}
-#dx-intro .dx-moon{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:7px;padding:8px 14px 8px 10px;border-radius:999px;border:1.5px solid rgba(255,255,255,.18);background:rgba(10,4,24,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;font:800 14px/1 Inter,sans-serif;white-space:nowrap;cursor:pointer;opacity:0;transition:opacity .35s,border-color .2s,background .2s,box-shadow .2s;will-change:transform}
-#dx-intro .dx-moon i{font-style:normal;font-size:17px}
-#dx-intro .dx-moon.on,#dx-intro .dx-moon:focus-visible{border-color:var(--c);background:color-mix(in srgb,var(--c) 30%,rgba(10,4,24,.8));box-shadow:0 0 22px color-mix(in srgb,var(--c) 70%,transparent);outline:none}
-#dx-intro .dx-bot{position:absolute;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));display:flex;justify-content:center;gap:12px;flex-wrap:wrap;z-index:3;padding:0 16px;animation:dxIn .9s 1.4s both}
-#dx-intro .dx-btn{border:0;border-radius:999px;padding:14px 26px;font:900 15px/1 Inter,sans-serif;letter-spacing:.04em;cursor:pointer}
-#dx-intro .dx-enter{background:linear-gradient(90deg,#ff5e8a,#ffb347);color:#1a0b2e;box-shadow:0 8px 30px rgba(255,94,138,.45)}
-#dx-intro .dx-skip{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.25)}
-#dx-intro .dx-hint{position:absolute;left:0;right:0;bottom:calc(max(22px,env(safe-area-inset-bottom)) + 62px);text-align:center;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#c4b5fd;opacity:.7;z-index:3;pointer-events:none;animation:dxIn .9s 1.8s both}
-#dx-intro .dx-load{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffb347,#ff5e8a 45%,#7b2a8f 80%);box-shadow:0 0 60px #ff5e8a88;animation:dxPulse 1.2s ease-in-out infinite;transition:opacity .5s}
-#dx-intro.gl-ready .dx-load{opacity:0}
-#dx-intro::after{content:"";position:absolute;inset:0;background:#fff;opacity:calc(var(--fl,0)*.55);pointer-events:none;z-index:4}
-/* sans WebGL : grille de boutons */
-#dx-intro.nogl .dx-load{display:none}
-#dx-intro.nogl .dx-moons{position:absolute;inset:auto 0 auto 0;top:50%;transform:translateY(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:12px;padding:0 16px;pointer-events:auto}
-#dx-intro.nogl .dx-moon{position:static;opacity:1;transform:none!important;font-size:16px;padding:12px 18px}
-#dx-intro.nogl .dx-hint{display:none}
-@keyframes dxIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes dxPulse{50%{transform:scale(1.08)}}
-@media (max-width:700px){#dx-intro .dx-moon{font-size:12.5px;padding:7px 11px 7px 8px}#dx-intro .dx-moon i{font-size:15px}#dx-intro .dx-hint{display:none}}
+#dx-intro.out{opacity:0;pointer-events:none}
+#dx-intro .dx-cam{position:absolute;inset:0;transform-origin:50% 50%;will-change:transform}
+#dx-intro .dx-bg{position:absolute;left:0;top:0;background-size:100% 100%;will-change:transform;filter:saturate(1.08) contrast(1.04)}
+#dx-intro .dx-rain{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#dx-intro .dx-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 55%,transparent 45%,rgba(5,2,12,.55) 100%),linear-gradient(180deg,rgba(5,2,12,.65),transparent 22%,transparent 78%,rgba(5,2,12,.6))}
+/* enseignes manga */
+#dx-intro .dx-sign{position:absolute;left:0;top:0;padding:0;border:0;background:none;cursor:pointer;transform-origin:50% 50%;opacity:0;--c:#ff5e8a;will-change:transform}
+#dx-intro .dx-sign .bd{position:absolute;inset:0;border-radius:4%;background:#0b0612;border:calc(var(--u)*.055) solid #fff;outline:calc(var(--u)*.025) solid #000;box-shadow:0 0 calc(var(--u)*.18) var(--c),0 0 calc(var(--u)*.5) color-mix(in srgb,var(--c) 55%,transparent),inset 0 0 calc(var(--u)*.2) color-mix(in srgb,var(--c) 45%,transparent);overflow:hidden;transition:box-shadow .2s}
+#dx-intro .dx-sign .bd::before{content:"";position:absolute;inset:0;background:radial-gradient(circle,color-mix(in srgb,var(--c) 55%,transparent) 22%,transparent 24%) 0 0/calc(var(--u)*.11) calc(var(--u)*.11);opacity:.55;-webkit-mask-image:linear-gradient(180deg,transparent 30%,#000);mask-image:linear-gradient(180deg,transparent 30%,#000)}
+#dx-intro .dx-sign .bd::after{content:"";position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 38%,rgba(255,255,255,.12) 0 2deg,transparent 2deg 9deg)}
+#dx-intro .dx-sign .jp{position:absolute;left:0;right:0;top:7%;display:flex;flex-direction:column;align-items:center;font:400 var(--jf)/1.05 'Dela Gothic One',sans-serif;color:#fff;text-shadow:0 0 calc(var(--u)*.06) var(--c),0 0 calc(var(--u)*.16) var(--c);z-index:1}
+#dx-intro .dx-sign .ic{position:absolute;left:0;right:0;bottom:22%;text-align:center;font-size:calc(var(--u)*.16);z-index:1}
+#dx-intro .dx-sign .nm{position:absolute;left:6%;right:6%;bottom:5%;background:#fff;color:#000;border:calc(var(--u)*.022) solid #000;font:400 var(--nf)/1.15 Bangers,Impact,sans-serif;letter-spacing:.04em;text-align:center;white-space:nowrap;overflow:hidden;z-index:1;padding:2% 0 0}
+#dx-intro .dx-sign .cap{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);background:#fff;color:#000;border:2px solid #000;box-shadow:3px 3px 0 var(--c);font:400 13px/1 Bangers,Impact,sans-serif;letter-spacing:.06em;padding:4px 7px 3px;white-space:nowrap;display:none}
+#dx-intro .dx-sign.small .cap{display:block}
+#dx-intro .dx-sign.small .nm{display:none}
+#dx-intro .dx-sign.on .bd,#dx-intro .dx-sign:focus-visible .bd{box-shadow:0 0 calc(var(--u)*.25) var(--c),0 0 calc(var(--u)*.9) var(--c),inset 0 0 calc(var(--u)*.3) var(--c)}
+#dx-intro .dx-sign:focus-visible{outline:none}
+#dx-intro .dx-sign.flk .bd{filter:brightness(.45)}
+#dx-intro .dx-ono{position:absolute;left:0;top:0;pointer-events:none;font:400 48px/1 Bangers,Impact,sans-serif;color:var(--c,#ffe14d);-webkit-text-stroke:5px #000;paint-order:stroke fill;letter-spacing:.03em;opacity:0;transform-origin:50% 50%;white-space:nowrap;z-index:6}
+/* Dex */
+#dx-intro .dx-dex{position:absolute;left:0;top:0;background-repeat:no-repeat;transform-origin:50% 100%;pointer-events:none;z-index:5;will-change:transform,background-position;filter:drop-shadow(0 0 10px rgba(180,120,255,.35))}
+#dx-intro .dx-shadow{position:absolute;left:0;top:0;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%);pointer-events:none;z-index:4}
+/* UI */
+#dx-intro .dx-top{position:absolute;left:0;right:0;top:max(18px,env(safe-area-inset-top));text-align:center;pointer-events:none;z-index:8}
+#dx-intro .dx-logo{display:inline-block;font:400 clamp(34px,6vw,64px)/1 'Archivo Black',Inter,sans-serif;letter-spacing:.03em;color:#fff;-webkit-text-stroke:2px #000;paint-order:stroke fill;text-shadow:4px 4px 0 #000,0 0 30px rgba(255,59,138,.6);transform:rotate(-2deg)}
+#dx-intro .dx-logo b{color:#ff3b8a}
+#dx-intro .dx-sub{display:inline-block;margin-top:10px;background:#fff;color:#000;border:2px solid #000;box-shadow:3px 3px 0 #ff3b8a;font:400 clamp(15px,2vw,20px)/1 Bangers,Impact,sans-serif;letter-spacing:.14em;padding:5px 12px 3px}
+#dx-intro .dx-bot{position:absolute;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));display:flex;justify-content:center;gap:12px;flex-wrap:wrap;padding:0 16px;z-index:8}
+#dx-intro .dx-btn{border:2px solid #000;border-radius:6px;padding:11px 20px 9px;font:400 20px/1 Bangers,Impact,sans-serif;letter-spacing:.06em;cursor:pointer}
+#dx-intro .dx-enter{background:#ffe14d;color:#000;box-shadow:4px 4px 0 #ff3b8a}
+#dx-intro .dx-skip{background:#fff;color:#000;box-shadow:4px 4px 0 #000}
+#dx-intro .dx-btn:focus-visible{outline:3px solid #22d3ee;outline-offset:2px}
+#dx-intro .dx-hint{position:absolute;left:0;right:0;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 58px);text-align:center;z-index:8;pointer-events:none}
+#dx-intro .dx-hint span{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:4px 10px;font:600 12px/1.3 Inter,sans-serif;letter-spacing:.08em;color:#e9d5ff}
+/* entrée façon page manga + sortie encre */
+#dx-intro .dx-page{position:absolute;inset:0;z-index:9;pointer-events:none;background:#fff;clip-path:inset(0);transition:clip-path .9s cubic-bezier(.7,0,.2,1)}
+#dx-intro .dx-page::before{content:"";position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 50%,#000 0 1.2deg,transparent 1.2deg 6deg);-webkit-mask-image:radial-gradient(circle,transparent 18%,#000 60%);mask-image:radial-gradient(circle,transparent 18%,#000 60%)}
+#dx-intro .dx-page b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-6deg);font:400 clamp(60px,14vw,170px)/1 Bangers,Impact,sans-serif;color:#ff3b8a;-webkit-text-stroke:8px #000;paint-order:stroke fill;white-space:nowrap}
+#dx-intro.open .dx-page{clip-path:inset(50% 50% 50% 50%)}
+#dx-intro .dx-ink{position:absolute;inset:0;z-index:10;pointer-events:none;opacity:0;background:#fff}
+#dx-intro .dx-ink::before{content:"";position:absolute;inset:0;background:radial-gradient(circle,#000 30%,transparent 33%) 0 0/9px 9px;opacity:.35}
+#dx-intro .dx-ink b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg) scale(.3);font:400 clamp(80px,18vw,220px)/1 Bangers,Impact,sans-serif;color:var(--c,#ffe14d);-webkit-text-stroke:10px #000;paint-order:stroke fill;transition:transform .35s cubic-bezier(.2,1.6,.4,1)}
+#dx-intro.inked .dx-cam{filter:grayscale(1) contrast(1.6) brightness(1.1);transition:filter .25s}
+#dx-intro.inked .dx-ink{opacity:1;transition:opacity .25s .2s}
+#dx-intro.inked .dx-ink b{transform:translate(-50%,-50%) rotate(-8deg) scale(1)}
+@media (max-width:700px){#dx-intro .dx-ono{font-size:34px;-webkit-text-stroke:4px #000}#dx-intro .dx-sign .cap{font-size:10.5px;padding:3px 4px 2px;letter-spacing:.03em}#dx-intro .dx-hint{display:none}}
+@media (prefers-reduced-motion:reduce){#dx-intro .dx-page{transition:none}}
 html.dx-lock,html.dx-lock body{overflow:hidden!important}
 </style>
 <div id="dx-intro" role="dialog" aria-label="Bienvenue sur ANIMEDEX : choisis une section">
-  <canvas aria-hidden="true"></canvas>
-  <div class="dx-load" aria-hidden="true"></div>
-  <div class="dx-top"><div class="dx-logo">ANIME<b>DEX</b></div><div class="dx-sub">Choisis ta destination</div></div>
-  <div class="dx-moons">
-    <button class="dx-moon" data-go="anime" data-c="#ff5e8a" style="--c:#ff5e8a"><i>📺</i>Animés</button>
-    <button class="dx-moon" data-go="daily" data-c="#facc15" style="--c:#facc15"><i>🎯</i>Défi du jour</button>
-    <button class="dx-moon" data-go="manga" data-c="#ffb347" style="--c:#ffb347"><i>📚</i>Mangas</button>
-    <button class="dx-moon" data-go="blindtest" data-c="#22d3ee" style="--c:#22d3ee"><i>🎵</i>Blind test</button>
-    <button class="dx-moon" data-go="quiz" data-c="#a78bfa" style="--c:#a78bfa"><i>🧠</i>Quiz</button>
-    <button class="dx-moon" data-go="imposter" data-c="#f43f5e" style="--c:#f43f5e"><i>🕵️</i>Imposteur</button>
-    <button class="dx-moon" data-go="defi" data-c="#4ade80" style="--c:#4ade80"><i>⚔️</i>Défier un ami</button>
-    <button class="dx-moon" data-go="auction" data-c="#fb923c" style="--c:#fb923c"><i>💰</i>Enchères</button>
-  </div>
-  <div class="dx-hint">Fais tourner la planète · clique sur une lune</div>
-  <div class="dx-bot"><button class="dx-btn dx-enter" data-go="anime">Entrer sur le site →</button><button class="dx-btn dx-skip" data-go="skip">Passer</button></div>
+ <div class="dx-top"><div class="dx-logo">ANIME<b>DEX</b></div><br><div class="dx-sub">Choisis ta destination</div></div>
+ <div class="dx-hint"><span>Clique sur une enseigne : Dex y va</span></div>
+ <div class="dx-bot"><button class="dx-btn dx-enter" type="button" data-go="anime">Entrer sur le site →</button><button class="dx-btn dx-skip" type="button" data-go="skip">Passer</button></div>
 </div>
-<script id="dx-intro-js">
-(function(){
-  var root=document.getElementById('dx-intro');if(!root)return;
-  var q=location.search||'';
-  // liens directs (défi, salle, ajout d'ami, ancre) : pas d'intro
-  if(/[?&](defi|salle|add)=/.test(q)||location.hash.length>1){root.remove();var c=document.getElementById('dx-intro-css');if(c)c.remove();return}
-  document.documentElement.classList.add('dx-lock');
-  var done=false;
-  function act(k){
-    try{
-      if(k==='skip'||k==='anime'){if(k==='anime')switchView('anime');return}
-      if(k==='daily'||k==='defi'){switchView('anime');setTimeout(function(){var b=document.getElementById(k==='daily'?'mx-daily-btn':'mx-defi-btn');if(b)b.click()},160);return}
-      switchView(k);
-    }catch(e){}
-  }
-  function close(k){
-    if(done)return;done=true;
-    act(k);
-    root.classList.add('out');document.documentElement.classList.remove('dx-lock');
-    root.dispatchEvent(new CustomEvent('dx-close'));
-    setTimeout(function(){root.remove()},650);
-  }
-  window.dxIntroGo=function(el){
-    if(done||!el)return;var k=el.getAttribute('data-go');
-    if(el.classList.contains('dx-moon')&&root.classList.contains('gl-ready')){root.dispatchEvent(new CustomEvent('dx-go',{detail:el}));setTimeout(function(){close(k)},800)}
-    else close(k);
-  };
-  root.addEventListener('click',function(e){var b=e.target.closest('[data-go]');if(b){e.preventDefault();window.dxIntroGo(b)}});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close('skip')});
-  // WebGL indisponible ou script bloqué : grille de boutons
-  setTimeout(function(){if(!root.classList.contains('gl-ready'))root.classList.add('nogl')},5000);
-  var s=document.createElement('script');s.type='module';s.src='/dx-intro.js?v=1';s.onerror=function(){root.classList.add('nogl')};document.head.appendChild(s);
+<script id="dx-intro-js">(function(){
+var root=document.getElementById('dx-intro');if(!root)return;
+var q=location.search||'';
+if(/[?&](defi|salle|add)=/.test(q)||location.hash.length>1){root.remove();var c0=document.getElementById('dx-intro-css');if(c0)c0.remove();return}
+document.documentElement.classList.add('dx-lock');
+var A=window.DXA||{l:'/img/intro-rue-l.webp',p:'/img/intro-rue-p.webp',walk:'/img/dex-walk.webp',run:'/img/dex-run.webp'};
+var S8=[
+ {k:'anime',n:'Animés',i:'📺',c:'#ff3b8a',jp:'アニメ',o:'BAM!'},
+ {k:'manga',n:'Mangas',i:'📚',c:'#ffb347',jp:'マンガ',o:'DOKI!'},
+ {k:'daily',n:'Défi du jour',i:'🎯',c:'#facc15',jp:'今日',o:'GO!!'},
+ {k:'quiz',n:'Quiz',i:'🧠',c:'#a78bfa',jp:'クイズ',o:'!?'},
+ {k:'defi',n:'Défier un ami',i:'⚔️',c:'#4ade80',jp:'対決',o:'VS!!'},
+ {k:'blindtest',n:'Blind test',i:'🎵',c:'#22d3ee',jp:'音楽',o:'♪♪!'},
+ {k:'imposter',n:'Imposteur',i:'🕵️',c:'#f43f5e',jp:'偽者',o:'ゴゴゴ'},
+ {k:'auction',n:'Enchères',i:'💰',c:'#fb923c',jp:'競売',o:'KA-CHING!'}];
+// scènes : coordonnées en pixels de l'image ; enseigne [cx,cy,hauteur, solX, solY]
+var SCN={
+ l:{img:A.l,w:1376,h:768,vp:[690,440],st:[688,735],dh:270,s:{anime:[215,318,220,300,700],manga:[1165,318,220,1080,705],daily:[425,330,130,512,560],quiz:[965,330,130,880,565],defi:[535,368,82,592,505],blindtest:[850,370,82,800,507],imposter:[612,394,52,642,476],auction:[775,396,52,745,477]}},
+ p:{img:A.p,w:768,h:1376,vp:[387,775],st:[387,1235],dh:370,s:{anime:[160,505,250,190,1150],manga:[608,505,250,585,1150],daily:[212,770,150,272,962],quiz:[562,785,150,500,966],defi:[262,650,96,332,872],blindtest:[510,662,96,440,874],imposter:[312,568,64,360,822],auction:[462,588,64,410,824]}}};
+var WALK={src:A.walk,fw:148,fh:380,n:6,cyc:[1,2,3,4],fps:7},RUN={src:A.run,fw:234,fh:380,n:6,cyc:[0,1,2,3,4,5],fps:13};
+function el(t,c,p,h){var e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;(p||root).appendChild(e);return e}
+var cam=el('div','dx-cam'),bg=el('div','dx-bg',cam),rain=el('canvas','dx-rain',cam),vig=el('div','dx-vig',cam);
+var signs={};S8.forEach(function(s){var b=el('button','dx-sign',cam);b.type='button';b.dataset.go=s.k;b.style.setProperty('--c',s.c);b.setAttribute('aria-label',s.n);
+ b.innerHTML='<span class="bd"></span><span class="jp">'+s.jp.split('').map(function(c){return '<span>'+c+'</span>'}).join('')+'</span><span class="ic">'+s.i+'</span><span class="nm">'+s.n+'</span><span class="cap">'+s.n+'</span>';signs[s.k]={b:b,s:s,hv:0}});
+var shadow=el('div','dx-shadow',cam),dex=el('div','dx-dex',cam);
+var ono=el('div','dx-ono');
+var top=root.querySelector('.dx-top'),hint=root.querySelector('.dx-hint'),page=el('div','dx-page',root,'<b>ANIMEDEX!</b>'),ink=el('div','dx-ink',root,'<b></b>');
+[WALK.src,RUN.src].forEach(function(u){var i=new Image();i.src=u});
+var W,H,sc,ox,oy,cf,mode='',px=0,py=0,tpx=0,tpy=0;
+function layout(){W=innerWidth;H=innerHeight;var m=H>W*1.1?'p':'l';if(m!==mode){mode=m;cf=SCN[m];bg.style.backgroundImage='url("'+cf.img+'")'}
+ sc=Math.max(W/cf.w,H/cf.h)*1.05;ox=(W-cf.w*sc)/2;oy=(H-cf.h*sc)/2;bg.style.width=cf.w*sc+'px';bg.style.height=cf.h*sc+'px';rain.width=W;rain.height=H}
+layout();addEventListener('resize',function(){layout();if(!walk)place(0)});
+function P(x,y){return [ox+x*sc,oy+y*sc]}
+function kOf(y){return Math.max(.07,(y-cf.vp[1])/(cf.st[1]-cf.vp[1]))}
+var face=1,dexPos=null,hop=0,walk=null,t0=performance.now(),last=t0,done=false,hov=null;
+function drawDex(x,y,frame,spr,f){var k=kOf(y),hp=cf.dh*sc*k,s=hp/spr.fh,w=spr.fw*s,p=P(x,y);
+ dex.style.width=w+'px';dex.style.height=hp+'px';dex.style.backgroundImage='url("'+spr.src+'")';dex.style.backgroundSize=(spr.fw*spr.n*s)+'px '+hp+'px';dex.style.backgroundPosition=(-frame*spr.fw*s)+'px 0';
+ dex.style.transform='translate('+(p[0]-w/2+px*-14*k)+'px,'+(p[1]-hp-hop*hp*.12)+'px) scaleX('+f+')';
+ shadow.style.width=w*1.1+'px';shadow.style.height=hp*.09+'px';shadow.style.transform='translate('+(p[0]-w*.55+px*-14*k)+'px,'+(p[1]-hp*.05)+'px)'}
+function place(t){
+ bg.style.transform='translate('+(ox+px*-10)+'px,'+(oy+py*-6)+'px)';
+ S8.forEach(function(s,i){var o=signs[s.k],c=cf.s[s.k],p=P(c[0],c[1]),u=c[2]*sc,ap=Math.min(1,Math.max(0,(t-.9-i*.09)/.35)),d=c[2]/220;
+  o.hv+=((hov===s.k?1:0)-o.hv)*.2;var x=Math.max(u*.25+6,Math.min(W-u*.25-6,p[0]))+px*-(10+16*d),y=p[1]+py*-(6+8*d);
+  o.b.style.setProperty('--u',u+'px');o.b.style.setProperty('--nf',Math.min(u*.12,u*.4/(s.n.length*.5))+'px');o.b.style.setProperty('--jf',(u*(s.jp.length>2?.2:.26))+'px');o.b.style.width=u*.46+'px';o.b.style.height=u+'px';o.b.classList.toggle('small',u<95);
+  var bk=ap<1?1+.6*(1-ap)*Math.sin(ap*12):1;o.b.style.transform='translate('+(x-u*.23)+'px,'+(y-u/2-o.hv*u*.05)+'px) scale('+(ap*bk*(1+o.hv*.1))+')';o.b.style.opacity=ap;o.b.classList.toggle('on',hov===s.k);o.x=x;o.y=y;o.u=u});
+ if(!walk){var st=cf.st;drawDex(st[0],st[1],0,WALK,face)}}
+// pluie
+var rg=rain.getContext('2d'),drops=[];for(var i=0;i<(W<700?120:240);i++)drops.push({x:Math.random(),y:Math.random(),v:.6+Math.random()*.8,l:.02+Math.random()*.03});
+function drawRain(dt){rg.clearRect(0,0,W,H);rg.strokeStyle='rgba(190,215,255,.28)';rg.lineWidth=1;rg.beginPath();drops.forEach(function(d){d.y+=d.v*dt*1.6;d.x+=d.v*dt*.12;if(d.y>1){d.y=-.05;d.x=Math.random()}var x=d.x*W,y=d.y*H;rg.moveTo(x,y);rg.lineTo(x-d.l*H*.08,y-d.l*H)});rg.stroke()}
+var flk=0;
+function frame(now){if(done)return;requestAnimationFrame(frame);var dt=Math.min(.05,(now-last)/1000);last=now;var t=(now-t0)/1000;
+ px+=(tpx-px)*.06;py+=(tpy-py)*.06;drawRain(dt);hop=Math.max(0,hop-dt*3);
+ if((flk-=dt)<0){flk=1.5+Math.random()*3;var o=signs[S8[Math.floor(Math.random()*8)].k];o.b.classList.add('flk');setTimeout(function(){o.b.classList.remove('flk')},90+Math.random()*120)}
+ place(t);
+ if(walk){var w=walk,f=Math.min(1,(now-w.t0)/w.d),e=w.run?f:f<.5?2*f*f:1-Math.pow(-2*f+2,2)/2;e=w.run?e:f;var x=w.a[0]+(w.b[0]-w.a[0])*e,y=w.a[1]+(w.b[1]-w.a[1])*e;
+  var spr=w.run?RUN:WALK,fi=spr.cyc[Math.floor((now-w.t0)/1000*spr.fps)%spr.cyc.length];drawDex(x,y,f>=1?(w.run?0:0):fi,f>=1&&!w.run?WALK:spr,w.face);
+  var z=f<.4?0:(f-.4)/.6;z=z*z*(3-2*z);var o=signs[w.k];cam.style.transform='translate('+((W/2-o.x)*z*.55)+'px,'+((H*.45-o.y)*z*.55)+'px) scale('+(1+z*(w.run?.9:.55))+')';cam.style.transformOrigin=o.x+'px '+o.y+'px';
+  if(f>=1&&!w.end){w.end=1;ink.style.setProperty('--c',o.s.c);ink.querySelector('b').textContent=o.s.o;root.classList.add('inked');setTimeout(function(){close(w.k)},650)}}
+ else if(hov){var o2=signs[hov];ono.style.setProperty('--c',o2.s.c);ono.textContent=o2.s.o;ono.style.opacity=1;ono.style.transform='translate('+(o2.x+o2.u*.12)+'px,'+(o2.y-o2.u*.62)+'px) rotate(-12deg) scale('+(1+.06*Math.sin(t*14))+')'}
+ else ono.style.opacity=0}
+requestAnimationFrame(frame);
+setTimeout(function(){root.classList.add('open')},250);
+// interactions
+function setHov(k){if(walk)return;hov=k;if(k){var c=cf.s[k];var nf=c[3]<cf.st[0]?-1:1;if(nf!==face){face=nf}hop=1}}
+Object.keys(signs).forEach(function(k){var b=signs[k].b;b.addEventListener('mouseenter',function(){setHov(k)});b.addEventListener('mouseleave',function(){if(hov===k)setHov(null)});b.addEventListener('focus',function(){setHov(k)});b.addEventListener('blur',function(){if(hov===k)setHov(null)});b.addEventListener('click',function(e){e.preventDefault();go(k)})});
+root.addEventListener('pointermove',function(e){if(e.pointerType==='mouse'){tpx=e.clientX/W*2-1;tpy=e.clientY/H*2-1}});
+function go(k){if(walk||done)return;hov=null;ono.style.opacity=0;if(hint)hint.style.opacity=0;var c=cf.s[k],st=cf.st,kk=kOf(c[4]),run=kk<.62;
+ walk={k:k,a:[st[0],st[1]],b:[c[3],c[4]],run:run,face:c[3]<st[0]?-1:1,d:run?1050+(1-kk)*700:1500,t0:performance.now()}}
+window.dxIntroGo=function(el){if(el&&el.dataset&&el.dataset.go&&signs[el.dataset.go])go(el.dataset.go)};
+function act(k){if(window.dxAct)return window.dxAct(k);try{if(k==='skip')return;if(k==='daily'||k==='defi'){switchView('anime');setTimeout(function(){var b=document.getElementById(k==='daily'?'mx-daily-btn':'mx-defi-btn');if(b)b.click()},160);return}switchView(k)}catch(e){}}
+function close(k){if(done)return;done=true;act(k);root.classList.add('out');document.documentElement.classList.remove('dx-lock');setTimeout(function(){if(window.dxReplay)return window.dxReplay();root.remove()},550)}
+root.querySelectorAll('.dx-bot [data-go]').forEach(function(b){b.addEventListener('click',function(){close(b.dataset.go)})});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close('skip')});
 })();
 </script>
-<!-- ==== fin intro 3D ==== -->
+<!-- ==== fin intro rue néon ==== -->
 
 
 <!-- ================= ANIMEDEX MOTION : intro ================= -->
