@@ -108,6 +108,15 @@
     {
       "path": "/api/push?a=cron",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/season?a=cron",
+      "schedule": "30 5 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/season.js": {
+      "maxDuration": 60
+    }
+  }
 }

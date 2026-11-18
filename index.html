@@ -19,7 +19,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png">
 <script>try{var t=localStorage.getItem('mx-theme');if(!t&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <link rel="alternate" hreflang="fr" href="https://animedexfr.fr/"><link rel="alternate" hreflang="en" href="https://animedexfr.fr/en"><link rel="alternate" hreflang="x-default" href="https://animedexfr.fr/">
-<script id="mx-lang-boot">(function(){var L=null,ls;try{ls=localStorage;L=ls.getItem("mx_lang")}catch(e){}var q=(location.search.match(/[?&]lang=(fr|en)/)||[])[1];if(q){L=q;try{ls.setItem("mx_lang",q)}catch(e){}}if(/^\/en(\/|$)/.test(location.pathname)){L="en";try{ls.setItem("mx_lang","en")}catch(e){}}else if(L==="en"&&!/bot|crawl|spider|slurp|lighthouse/i.test(navigator.userAgent)){location.replace("/en"+location.search+location.hash);L="redir"}window.MX_LANG=L==="en"?"en":"fr";if(MX_LANG==="en"){document.documentElement.lang="en";document.write('<script src="/data/en-4229c25bae.js"><\/script>')}})();</script>
+<script id="mx-lang-boot">(function(){var L=null,ls;try{ls=localStorage;L=ls.getItem("mx_lang")}catch(e){}var q=(location.search.match(/[?&]lang=(fr|en)/)||[])[1];if(q){L=q;try{ls.setItem("mx_lang",q)}catch(e){}}if(/^\/en(\/|$)/.test(location.pathname)){L="en";try{ls.setItem("mx_lang","en")}catch(e){}}else if(L==="en"&&!/bot|crawl|spider|slurp|lighthouse/i.test(navigator.userAgent)){location.replace("/en"+location.search+location.hash);L="redir"}window.MX_LANG=L==="en"?"en":"fr";if(MX_LANG==="en"){document.documentElement.lang="en";document.write('<script src="/data/en-acdda86be3.js"><\/script>')}})();</script>
 <meta name="theme-color" content="#0a0a0a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://s4.anilist.co">
@@ -28,7 +28,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit, where
+    getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, query, orderBy, limit, where, increment
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import { getAnalytics, logEvent, isSupported } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
 
@@ -123,6 +123,7 @@
   }, () => cb([]));
 
   window.fbMergeDoc = (c, id, data) => setDoc(doc(db, c, id), data, { merge: true });
+  window.fbIncr = (c, id, f, n) => setDoc(doc(db, c, id), { [f]: increment(n || 1) }, { merge: true });
   window.fbGetDoc = async (c, id) => { const snap = await getDoc(doc(db, c, id)); return snap.exists() ? snap.data() : null; };
 
   window.fbReady = true;
@@ -8478,13 +8479,143 @@ function box(it){var x=it.x,rows=[];
  (x.links||[]).forEach(function(l){acts.push('<a href="'+esc(l.u)+'" target="_blank" rel="noopener">Regarder sur '+esc(l.s)+'</a>')});
  if(x.off)acts.push('<a href="'+esc(x.off)+'" target="_blank" rel="noopener">Site officiel</a>');
  acts.push('<a href="https://anilist.co/anime/'+it.al+'" target="_blank" rel="noopener">AniList</a>');
- return '<div class="h"><b>🌸 Automne 2026</b> Infos de la saison</div><dl>'+rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>'}).join('')+'</dl><div class="acts">'+acts.join('')+'</div>'}
+ return '<div class="h"><b>🌸 '+esc(x.season||'Automne 2026')+'</b> Infos de la saison</div><dl>'+rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>'}).join('')+'</dl><div class="acts">'+acts.join('')+'</div>'}
 try{var _od=openDetail;openDetail=function(id,type){var r=_od.apply(this,arguments);try{var old=$('mx17-info');if(old)old.remove();['section-ost','section-oped'].forEach(function(k){var e=$(k);if(e)e.style.display=''});if(type!=='manga'){var it=ANIME.find(function(a){return a.id===id});if(it&&it.x){['section-ost','section-oped'].forEach(function(k){var e=$(k);if(e)e.style.display=((it.ost||[]).length||(it.openings||[]).length)?'':'none'});var meta=$('detail-meta');if(meta){var d=document.createElement('div');d.id='mx17-info';d.innerHTML=box(it);var anchor=$('mx15-sim')||meta;anchor.insertAdjacentElement('afterend',d)}}}}catch(e){}return r}}catch(e){}
 setInterval(function(){document.querySelectorAll('#mx17-info .cd').forEach(function(c){var s=+c.dataset.at-Date.now()/1000;if(s>0)c.textContent='Ép. '+c.dataset.ep+' dans '+untilTxt(s)})},30000);
 // badge « NOUVEAU » sur les cartes des séries de la saison
 var NEWID={};try{ANIME.forEach(function(a){if(a.x)NEWID[a.id]=1})}catch(e){}
 function badge(){document.querySelectorAll('.card .cover-fav-btn[data-key^="anime:"]').forEach(function(b){var cv=b.parentElement;if(!cv||cv.__mx17)return;cv.__mx17=1;var id=b.getAttribute('data-key').slice(6);if(!NEWID[id])return;if(getComputedStyle(cv).position==='static')cv.style.position='relative';var t=document.createElement('span');t.className='mx17-new';t.textContent='SAISON';cv.appendChild(t)})}
 new MutationObserver(function(){clearTimeout(badge.t);badge.t=setTimeout(badge,120)}).observe(document.body,{childList:true,subtree:true});badge();
+})();
+
+</script>
+<style id="mx-v18-css">#mx18-today{margin:22px 0 6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+#mx18-today .p{border:2px solid var(--ink);background:var(--bg);padding:14px;min-width:0;position:relative}
+#mx18-today .p h4{font:700 11px/1 var(--mono,monospace);letter-spacing:1.6px;text-transform:uppercase;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+#mx18-today .p h4 b{background:var(--ink);color:var(--bg);padding:4px 7px;font-weight:700}
+#mx18-today .p h4 i{font-style:normal;color:var(--accent,#ff4d2e);margin-left:auto;font-size:10px}
+.mx18-aotd{display:flex;gap:12px;cursor:pointer}
+.mx18-aotd img{width:84px;aspect-ratio:2/3;object-fit:cover;border:1.5px solid var(--ink);flex:none;background:var(--bg-alt)}
+.mx18-aotd .t{font:800 17px/1.15 'Archivo Black',Inter,sans-serif;margin:2px 0 6px;overflow-wrap:anywhere}
+.mx18-aotd .g{font:600 10px/1.4 var(--mono,monospace);letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint)}
+.mx18-aotd .s{font-size:13px;color:var(--ink-soft);margin-top:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mx18-list{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.mx18-list li{display:flex;align-items:center;gap:9px;cursor:pointer;min-width:0}
+.mx18-list img{width:30px;height:42px;object-fit:cover;border:1px solid var(--ink);flex:none;background:var(--bg-alt)}
+.mx18-list .n{font:800 15px/1 'Archivo Black',sans-serif;width:22px;text-align:center;flex:none}
+.mx18-list .t{font-weight:700;font-size:13.5px;line-height:1.2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.mx18-list small{font:600 10.5px/1.2 var(--mono,monospace);color:var(--ink-faint);white-space:nowrap}
+.mx18-list small.hot{color:var(--accent,#ff4d2e)}
+.mx18-vote .bar{height:7px;background:var(--bg-alt);border:1px solid var(--ink);margin-top:3px}
+.mx18-vote .bar span{display:block;height:100%;background:#ff3b8a;transition:width .6s}
+.mx18-btn{margin-top:11px;font:700 11px/1 var(--mono,monospace);letter-spacing:1px;text-transform:uppercase;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);padding:9px 11px;cursor:pointer}
+.mx18-empty{font-size:13px;color:var(--ink-faint)}
+#mx18-vm{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+#mx18-vm .box{background:var(--bg);border:2px solid var(--ink);max-width:720px;width:100%;max-height:86vh;overflow:auto;padding:18px;box-shadow:8px 8px 0 #ff3b8a}
+#mx18-vm h3{font:900 22px/1.1 'Archivo Black',sans-serif;margin:0 0 4px}
+#mx18-vm .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;margin-top:14px}
+#mx18-vm .grid button{border:1.5px solid var(--ink);background:var(--bg);padding:0;cursor:pointer;text-align:left;color:var(--ink)}
+#mx18-vm .grid img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block}
+#mx18-vm .grid span{display:block;font:700 11.5px/1.2 Inter,sans-serif;padding:6px}
+#mx18-vm .grid button.me{outline:3px solid #ff3b8a}
+#mx18-rx{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 2px}
+#mx18-rx button{border:1.5px solid var(--ink);background:var(--bg);color:var(--ink);padding:6px 10px;font:700 13px/1 Inter,sans-serif;cursor:pointer;display:flex;gap:6px;align-items:center}
+#mx18-rx button.on{background:var(--ink);color:var(--bg)}
+#mx18-rx .lb{font:600 10px/1 var(--mono,monospace);letter-spacing:1.3px;text-transform:uppercase;color:var(--ink-faint);align-self:center;margin-right:4px}
+.mx-burst,.mx-ono{position:fixed;pointer-events:none;z-index:99999}
+@media (prefers-reduced-motion:no-preference){
+ .view.mx-enter{animation:mx18in .4s cubic-bezier(.2,.8,.2,1)}
+ @keyframes mx18in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+ .card.mx-rv{opacity:0;transform:translateY(20px) scale(.97)}
+ .card.mx-rv.mx-in{opacity:1;transform:none;transition:opacity .5s ease,transform .5s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0ms)}
+ .mx-burst{width:180px;height:180px;margin:-90px 0 0 -90px;border-radius:50%;background:repeating-conic-gradient(var(--ink,#000) 0 2.2deg,transparent 2.2deg 11deg);-webkit-mask:radial-gradient(circle,transparent 30%,#000 32%,#000 58%,transparent 64%);mask:radial-gradient(circle,transparent 30%,#000 32%,#000 58%,transparent 64%);animation:mxburst .45s ease-out forwards}
+ @keyframes mxburst{from{transform:scale(.25);opacity:.85}to{transform:scale(1.45);opacity:0}}
+ .mx-ono{font:900 28px/1 'Bangers','Archivo Black',Impact,sans-serif;color:#ff3b8a;-webkit-text-stroke:2px #000;letter-spacing:1px;animation:mxono .85s ease-out forwards}
+ @keyframes mxono{0%{transform:translate(-50%,-50%) scale(.2) rotate(-14deg);opacity:0}25%{transform:translate(-50%,-60%) scale(1.15) rotate(-6deg);opacity:1}100%{transform:translate(-50%,-150%) scale(1) rotate(-4deg);opacity:0}}
+ #mx18-rx button:active{transform:scale(.92)}
+ #mx18-today .p{animation:mx18in .5s cubic-bezier(.2,.8,.2,1) both}
+ #mx18-today .p:nth-child(2){animation-delay:.08s}#mx18-today .p:nth-child(3){animation-delay:.16s}#mx18-today .p:nth-child(4){animation-delay:.24s}
+}
+</style>
+<script id="mx-v18-js">
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)},EN=window.MX_LANG==='en',T=function(s){return window.mxT?window.mxT(s):s};
+var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function dk(d){d=d||new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()}
+function fb(){return new Promise(function(r){if(window.fbReady)return r(true);var n=0,t=setInterval(function(){if(window.fbReady||++n>40){clearInterval(t);r(!!window.fbReady)}},250)})}
+function open_(id,type){try{openDetail(id,type||'anime');window.scrollTo(0,0)}catch(e){}}
+var SEASON_KEY='FALL-2026';
+function seasonItems(){try{return ANIME.filter(function(a){return a.x})}catch(e){return[]}}
+// ---------- 1. mise à jour automatique de la saison ----------
+function mergeSeason(d){if(!d)return;var added=0,ids={};ANIME.forEach(function(a){ids[a.id]=1});
+ var byAl={};ANIME.forEach(function(a){if(a.al)byAl[a.al]=a});
+ Object.keys(d.next||{}).forEach(function(al){var a=byAl[al];if(a&&a.x)a.x.next=d.next[al]});
+ (d.items||[]).forEach(function(it){if(byAl[it.al])return;var id=it.id;while(ids[id])id+='-s';it.id=id;ids[id]=1;
+  if(EN){it.summary=it.summary_en||it.summary;it.seasons=it.seasons_en||it.seasons;if(it.x)it.x.season=it.x.season_en||it.x.season;(it.characters||[]).forEach(function(c){c.desc=c.desc_en||'';c.role=c.role==='Personnage principal'?'Main character':'Supporting character'})}
+  ANIME.push(it);byAl[it.al]=it;added++});
+ if(added){try{refreshAnime()}catch(e){}var tg=$('anime-count-tag');if(tg)tg.textContent=T('Base de données · '+ANIME.length+' animés');}
+ build()}
+fetch('/api/season').then(function(r){return r.ok?r.json():null}).then(mergeSeason).catch(function(){});
+// ---------- 2. accueil vivant ----------
+function nextOf(x){if(!x||!x.next)return null;var at=x.next.airingAt,ep=x.next.episode,now=Date.now()/1000;while(at<now-6*3600){at+=7*86400;ep++}if(x.ep&&ep>x.ep)return null;return{ep:ep,at:at}}
+function hm(t){var d=new Date(t*1000);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function untilTxt(sec){var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);return d>0?d+' j '+h+' h':h>0?h+' h '+m+' min':m+' min'}
+function aotd(){var L=ANIME.filter(function(a){return a.image&&a.summary});var h=0,s=String(dk());for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return L[h%L.length]}
+function row(a,right,cls,n){return '<li data-id="'+esc(a.id)+'">'+(n?'<span class="n">'+n+'</span>':'')+'<img loading="lazy" alt="" src="'+esc(a.image)+'"><span class="t">'+esc(a.title)+'</span>'+(right?'<small class="'+(cls||'')+'">'+right+'</small>':'')+'</li>'}
+var TREND=[],VOTES={};
+function build(){var hero=document.querySelector('#view-anime .hero');if(!hero)return;var box=$('mx18-today');if(!box){box=document.createElement('section');box.id='mx18-today';box.setAttribute('aria-label',T("Aujourd'hui sur ANIMEDEX"));hero.insertAdjacentElement('afterend',box)}
+ var a=aotd(),now=Date.now()/1000,sod=new Date();sod.setHours(0,0,0,0);var s0=sod/1000,s1=s0+86400;
+ var air=seasonItems().map(function(it){var n=nextOf(it.x);return n?{it:it,n:n}:null}).filter(Boolean);
+ var today=seasonItems().map(function(it){var x=it.x;if(!x||!x.next)return null;var at=x.next.airingAt,ep=x.next.episode;while(at<s0){at+=604800;ep++}while(at-604800>=s0){at-=604800;ep--}if(at>=s1||ep<1||(x.ep&&ep>x.ep))return null;return{it:it,n:{at:at,ep:ep}}}).filter(Boolean).sort(function(p,q){return p.n.at-q.n.at});
+ var soon=air.filter(function(o){return o.n.at>=now}).sort(function(p,q){return p.n.at-q.n.at}).slice(0,5);
+ var rel=today.length?today.slice(0,6):soon;
+ var relH=rel.length?'<ul class="mx18-list">'+rel.map(function(o){var d=o.n.at-now;return row(o.it,(d<=0?T('Sorti')+' · ':'')+T('Ép.')+' '+o.n.ep+' · '+(d<86400?hm(o.n.at):untilTxt(d)),d<3*3600&&d>0?'hot':'')}).join('')+'</ul>':'<p class="mx18-empty">'+T('Aucune sortie prévue.')+'</p>';
+ var trH=TREND.length?'<ul class="mx18-list">'+TREND.slice(0,5).map(function(t,i){return row(t.a,t.c+' 👁',i===0?'hot':'',i+1)}).join('')+'</ul>':'<ul class="mx18-list">'+seasonItems().slice(0,5).map(function(a,i){return row(a,'',null,i+1)}).join('')+'</ul>';
+ var my=ls('mx_vote_'+SEASON_KEY),tot=0;Object.keys(VOTES).forEach(function(k){tot+=VOTES[k]});
+ var top=seasonItems().map(function(a){return{a:a,v:VOTES['v_'+a.al]||0}}).sort(function(p,q){return q.v-p.v}).slice(0,3);
+ var voH='<div class="mx18-vote">'+(tot?top.map(function(o,i){var pc=Math.round(o.v*100/tot);return '<div style="margin-bottom:8px"><ul class="mx18-list">'+row(o.a,pc+' %','',i+1)+'</ul><div class="bar"><span style="width:'+pc+'%"></span></div></div>'}).join(''):'<p class="mx18-empty">'+T('Sois le premier à voter !')+'</p>')+'<button type="button" class="mx18-btn" data-vote>'+(my?T('Changer mon vote'):T('🗳️ Voter'))+'</button>'+(tot?' <small style="font:600 10px var(--mono,monospace);color:var(--ink-faint)">'+tot+' '+T('votes')+'</small>':'')+'</div>';
+ box.innerHTML='<div class="p"><h4><b>'+T('Anime du jour')+'</b><i>'+new Date().toLocaleDateString(EN?'en-US':'fr-FR',{day:'numeric',month:'short'})+'</i></h4>'+(a?'<div class="mx18-aotd" data-id="'+esc(a.id)+'"><img alt="" src="'+esc(a.image)+'"><div><div class="g">'+esc((a.genres||[]).slice(0,3).join(' · '))+'</div><div class="t">'+esc(a.title)+'</div><div class="s">'+esc(a.summary)+'</div></div></div>':'')+'</div>'+
+  '<div class="p"><h4><b>'+(today.length?T('Sorties du jour'):T('Prochains épisodes'))+'</b><i>● '+T('en direct')+'</i></h4>'+relH+'</div>'+
+  '<div class="p"><h4><b>'+T('Tendances')+'</b><i>'+T("aujourd'hui")+'</i></h4>'+trH+'</div>'+
+  '<div class="p"><h4><b>'+T('Anime de la saison')+'</b><i>'+T('vote')+'</i></h4>'+voH+'</div>'}
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('#mx18-today [data-id]');if(t){open_(t.getAttribute('data-id'));return}var v=e.target.closest&&e.target.closest('[data-vote]');if(v)voteModal()});
+async function loadTrend(){if(!(await fb())||!window.fbGetDoc)return;try{var d=(await window.fbGetDoc('chat_meta','vw_'+dk()))||{};var y=new Date();y.setDate(y.getDate()-1);if(Object.keys(d).length<3){var d2=(await window.fbGetDoc('chat_meta','vw_'+dk(y)))||{};Object.keys(d2).forEach(function(k){d[k]=(d[k]||0)+Math.ceil(d2[k]/3)})}
+ var map={};ANIME.forEach(function(a){map['anime_'+a.id]=a});try{MANGA.forEach(function(a){map['manga_'+a.id]=a})}catch(e){}
+ TREND=Object.keys(d).filter(function(k){return map[k]&&typeof d[k]==='number'}).map(function(k){return{a:map[k],c:d[k],k:k}}).sort(function(p,q){return q.c-p.c});build()}catch(e){}}
+async function loadVotes(){if(!(await fb())||!window.fbGetDoc)return;try{VOTES=(await window.fbGetDoc('chat_meta','vote_'+SEASON_KEY))||{};build()}catch(e){}}
+function voteModal(){var my=ls('mx_vote_'+SEASON_KEY);var m=document.createElement('div');m.id='mx18-vm';m.setAttribute('role','dialog');
+ m.innerHTML='<div class="box"><h3>'+T('Ton anime de la saison ?')+'</h3><p class="mx18-empty">'+T('Un vote par personne. Tu peux le changer quand tu veux.')+'</p><div class="grid">'+seasonItems().slice(0,30).map(function(a){return '<button type="button" data-al="'+a.al+'" class="'+(String(a.al)===my?'me':'')+'"><img loading="lazy" alt="" src="'+esc(a.image)+'"><span>'+esc(a.title)+'</span></button>'}).join('')+'</div><button type="button" class="mx18-btn" data-close style="background:var(--bg);color:var(--ink)">'+T('Fermer')+'</button></div>';
+ document.body.appendChild(m);
+ m.addEventListener('click',async function(e){if(e.target===m||e.target.closest('[data-close]')){m.remove();return}var b=e.target.closest('[data-al]');if(!b)return;var al=b.getAttribute('data-al');if(al===my){m.remove();return}
+  burst(e.clientX,e.clientY);ono(e.clientX,e.clientY,'VOTE!');
+  if(await fb()&&window.fbIncr){try{if(my)await window.fbIncr('chat_meta','vote_'+SEASON_KEY,'v_'+my,-1);await window.fbIncr('chat_meta','vote_'+SEASON_KEY,'v_'+al,1)}catch(err){}}
+  if(my)VOTES['v_'+my]=Math.max(0,(VOTES['v_'+my]||1)-1);VOTES['v_'+al]=(VOTES['v_'+al]||0)+1;ls('mx_vote_'+SEASON_KEY,al);window.mxEvt&&window.mxEvt('vote',{});setTimeout(function(){m.remove();build()},350)})}
+// ---------- 3. vues, réactions ----------
+var RX=[['f','🔥'],['l','😭'],['h','😂'],['m','🤯'],['c','❤️']],seen={};
+function rxBox(type,id){var key=type+'_'+id,old=$('mx18-rx');if(old)old.remove();var anchor=$('mx17-info')||$('mx15-sim')||$('detail-meta');if(!anchor)return;
+ var d=document.createElement('div');d.id='mx18-rx';d.innerHTML='<span class="lb">'+T('Ta réaction')+'</span>'+RX.map(function(r){return '<button type="button" data-rx="'+r[0]+'" aria-label="'+r[1]+'">'+r[1]+' <span>0</span></button>'}).join('');anchor.insertAdjacentElement('afterend',d);
+ var mine=ls('mx_rx_'+key);if(mine){var b=d.querySelector('[data-rx="'+mine+'"]');if(b)b.classList.add('on')}
+ fb().then(function(ok){if(!ok||!window.fbGetDoc)return;window.fbGetDoc('chat_meta','rx_'+key).then(function(r){r=r||{};RX.forEach(function(x){var b=d.querySelector('[data-rx="'+x[0]+'"] span');if(b)b.textContent=r[x[0]]||0})}).catch(function(){})});
+ d.addEventListener('click',async function(e){var b=e.target.closest('[data-rx]');if(!b)return;var k=b.getAttribute('data-rx'),prev=ls('mx_rx_'+key);if(prev===k)return;
+  var em=b.textContent.trim().split(' ')[0];ono(e.clientX,e.clientY,em,true);burst(e.clientX,e.clientY);
+  d.querySelectorAll('[data-rx]').forEach(function(x){x.classList.remove('on')});b.classList.add('on');var sp=b.querySelector('span');sp.textContent=+sp.textContent+1;
+  if(prev){var pb=d.querySelector('[data-rx="'+prev+'"] span');if(pb)pb.textContent=Math.max(0,+pb.textContent-1)}
+  ls('mx_rx_'+key,k);if(await fb()&&window.fbIncr){try{if(prev)await window.fbIncr('chat_meta','rx_'+key,prev,-1);await window.fbIncr('chat_meta','rx_'+key,k,1)}catch(err){}}})}
+try{var _od=openDetail;openDetail=function(id,type){var r=_od.apply(this,arguments);try{type=type||'anime';rxBox(type,id);var k=type+'_'+id;if(!seen[k]){seen[k]=1;fb().then(function(ok){if(ok&&window.fbIncr)window.fbIncr('chat_meta','vw_'+dk(),k,1).catch(function(){})})}}catch(e){}return r}}catch(e){}
+// ---------- 4. animations ----------
+function burst(x,y){if(RM)return;var b=document.createElement('div');b.className='mx-burst';b.style.left=x+'px';b.style.top=y+'px';document.body.appendChild(b);setTimeout(function(){b.remove()},500)}
+var ONO=['DON!','ZUKYUN!','DOKI!','BAM!','KYAA!','SUGOI!'];
+function ono(x,y,txt,big){if(RM)return;var o=document.createElement('div');o.className='mx-ono';o.textContent=txt||ONO[Math.floor(Math.random()*ONO.length)];o.style.left=x+'px';o.style.top=y+'px';if(big)o.style.fontSize='34px';document.body.appendChild(o);setTimeout(function(){o.remove()},900)}
+window.mxBurst=burst;window.mxOno=ono;
+document.addEventListener('click',function(e){if(!e.clientX&&!e.clientY)return;var c=e.target.closest&&e.target.closest('.card, #view-anime .hero button, #view-manga .hero button, .mx18-aotd');if(c&&!e.target.closest('.cover-fav-btn'))burst(e.clientX,e.clientY);var f=e.target.closest&&e.target.closest('.cover-fav-btn, #detail-fav-btn');if(f)setTimeout(function(){if(/★/.test(f.textContent))ono(e.clientX,e.clientY)},30)},true);
+if(!RM){try{var _sv=switchView;switchView=function(v){var r=_sv.apply(this,arguments);try{var el=document.querySelector('.view.active');if(el){el.classList.remove('mx-enter');void el.offsetWidth;el.classList.add('mx-enter');setTimeout(function(){el.classList.remove('mx-enter')},450)}}catch(e){}return r}}catch(e){}
+ if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){var i=0;es.forEach(function(en){if(en.isIntersecting){en.target.style.setProperty('--d',(i++%8)*45+'ms');en.target.classList.add('mx-in');io.unobserve(en.target)}})},{rootMargin:'0px 0px -6% 0px'});
+  var tag=function(){document.querySelectorAll('#grid-anime .card:not(.mx-rv), #grid-manga .card:not(.mx-rv)').forEach(function(c){c.classList.add('mx-rv');io.observe(c)})};
+  ['grid-anime','grid-manga'].forEach(function(g){var el=$(g);if(el)new MutationObserver(tag).observe(el,{childList:true})});tag()}}
+build();loadTrend();loadVotes();setInterval(function(){if(document.visibilityState==='visible')loadTrend()},90000);setInterval(function(){if($('mx18-today')&&document.visibilityState==='visible')build()},60000);
 })();
 
 </script>
