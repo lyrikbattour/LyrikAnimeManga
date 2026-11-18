@@ -119,6 +119,9 @@
     const list = []; snap.forEach(d => list.push(Object.assign({ id: d.id }, d.data()))); list.sort((a, b) => (a.ts || 0) - (b.ts || 0)); cb(list);
   }, () => cb([]));
 
+  window.fbMergeDoc = (c, id, data) => setDoc(doc(db, c, id), data, { merge: true });
+  window.fbGetDoc = async (c, id) => { const snap = await getDoc(doc(db, c, id)); return snap.exists() ? snap.data() : null; };
+
   window.fbReady = true;
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
@@ -738,7 +741,7 @@ html.dx-lock,html.dx-lock body{overflow:hidden!important}
 <script id="dx-intro-js">(function(){
 var root=document.getElementById('dx-intro');if(!root)return;
 var q=location.search||'';
-if(/[?&](defi|salle|add)=/.test(q)||location.hash.length>1){root.remove();var c0=document.getElementById('dx-intro-css');if(c0)c0.remove();return}
+if(/[?&](defi|salle|add|daily)=/.test(q)||location.hash.length>1){root.remove();var c0=document.getElementById('dx-intro-css');if(c0)c0.remove();return}
 document.documentElement.classList.add('dx-lock');
 var A=window.DXA||{l:'/img/intro-rue-l.webp',p:'/img/intro-rue-p.webp',walk:'/img/dex-walk.webp?v=2',run:'/img/dex-run.webp?v=2'};
 var S8=[
@@ -3668,6 +3671,7 @@ function nextQuizQuestion(){
 }
 function selectAnswer(opt, btnEl){
   const correct = opt.name === currentQuiz.answer.name;
+  window.mxEvt && window.mxEvt('quiz', {ok: correct});
   document.querySelectorAll('.quiz-opt').forEach(b=>{
     b.disabled = true;
     if(b.textContent === currentQuiz.answer.name) b.classList.add('correct');
@@ -3989,6 +3993,7 @@ function impCheckWin(){
 }
 
 function impShowResult(winner){
+  window.mxEvt && window.mxEvt('imp', {winner: winner});
   document.getElementById('imp-vote').style.display = 'none';
   document.getElementById('imp-result').style.display = 'block';
   const banner = document.getElementById('imp-result-banner');
@@ -4198,6 +4203,7 @@ function renderOnlineRoomState(){
     document.getElementById('imp-on-result').style.display = 'block';
     const banner = document.getElementById('imp-on-result-banner');
     const w = onlineRoomData.winner;
+    window.mxEvt && window.mxEvt('imp', {room: onlineRoomCode, winner: w});
     banner.textContent = w === 'civil' ? 'Les Civils gagnent !' : w === 'white' ? 'Mr. White gagne !' : 'Les infiltrés gagnent !';
     document.getElementById('imp-on-recap').innerHTML = onlineRoomData.players.map(p=>{
       const roleLabel = p.role === 'civil' ? 'Civil' : p.role === 'undercover' ? 'Undercover' : 'Mr. White';
@@ -4541,6 +4547,7 @@ document.getElementById('auc-next-round-btn').addEventListener('click', ()=>{
 });
 
 function showAucResult(){
+  window.mxEvt && window.mxEvt('auc', {});
   document.getElementById('auc-reveal').style.display = 'none';
   document.getElementById('auc-result').style.display = 'block';
 
@@ -4773,6 +4780,7 @@ function renderAucOnlineState(){
     }
   }
   else if(room.status === 'finished'){
+    window.mxEvt && window.mxEvt('auc', {room: aucOnline.roomCode});
     document.getElementById('auc-on-result-view').style.display = 'block';
     const scored = room.players.map(p=> ({ ...p, quality: p.roster.reduce((s,c)=> s + tierOf(c.name, room.scoreMode), 0) }));
     const ranked = scored.slice().sort((a,b)=> b.quality - a.quality || b.budget - a.budget);
@@ -5108,6 +5116,7 @@ document.getElementById('auc-on-quit-play-btn').addEventListener('click', quitAu
       if(st.streak >= 3) pts += 10 * (st.streak - 2);
     } else { st.streak = 0; }
     st.score += pts;
+    window.mxEvt && window.mxEvt('bt', {ok: ok});
     $('bt-score').textContent = st.score;
     $('bt-streak').textContent = st.streak;
     const stamp = $('bt-stamp'); stamp.textContent = ok ? 'CORRECT' : 'RATÉ'; stamp.classList.add('show');
@@ -6478,7 +6487,7 @@ function isHoneypotFilled(inputId){
   function openDaily(){
     $('#mx-dtitle').textContent = 'Défi du jour';
     dd.classList.add('open'); let saved=null; try{ saved = JSON.parse(localStorage.getItem(DK)||'null'); }catch(e){}
-    const Q = buildQuestions(), body = $('#mx-dbody'); let i=0; const marks=[];
+    const Q = buildQuestions(), body = $('#mx-dbody'); let i=0; const marks=[]; const t0=Date.now();
     if(saved && saved.marks && saved.marks.length===5) return showEnd(saved.marks);
     function showQ(){
       const q=Q[i];
@@ -6486,7 +6495,7 @@ function isHoneypotFilled(inputId){
       body.querySelectorAll('.mx-opt').forEach(b=>b.addEventListener('click', ()=>{
         const k=+b.dataset.k; const okk = k===q.a; marks.push(okk);
         body.querySelectorAll('.mx-opt').forEach(x=>{ x.disabled=true; if(+x.dataset.k===q.a) x.classList.add('ok'); else if(x===b) x.classList.add('ko'); });
-        setTimeout(()=>{ i++; if(i<5) showQ(); else { try{ localStorage.setItem(DK, JSON.stringify({marks})); }catch(e){} showEnd(marks); } }, 900);
+        setTimeout(()=>{ i++; if(i<5) showQ(); else { try{ localStorage.setItem(DK, JSON.stringify({marks})); }catch(e){} window.mxEvt && window.mxEvt('daily', {marks, ms: Date.now()-t0}); showEnd(marks); } }, 900);
       }));
     }
     function showEnd(m){
@@ -6495,6 +6504,7 @@ function isHoneypotFilled(inputId){
       const txt = `ANIMEDEX — Défi du jour ${d}\n${score}/5 ${grid}\n${location.origin}${location.pathname}`;
       body.innerHTML = `<div class="mx-dq"><div class="n">RÉSULTAT</div><h3>${score}/5</h3><div class="mx-grid">${grid}</div><p style="font-size:13px;color:var(--ink-soft)">Reviens demain pour 5 nouvelles questions.</p><div class="mx-actions"><button type="button" class="mx-sharebtn" id="mx-dshare">Partager mon score</button><button type="button" class="mx-sharebtn" id="mx-dduel">⚔️ Défier un ami</button></div></div>`;
       $('#mx-dduel').addEventListener('click', ()=> shareDefi(dkey, m, $('#mx-dduel')));
+      window.mxDailyEnd && window.mxDailyEnd(body, m);
       $('#mx-dshare').addEventListener('click', async ()=>{
         try{ if(navigator.share){ await navigator.share({text:txt}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
         try{ await navigator.clipboard.writeText(txt); $('#mx-dshare').textContent='✓ Copié'; }catch(e){ window.prompt('Copie ton score :', txt); }
@@ -6529,6 +6539,7 @@ function isHoneypotFilled(inputId){
       let verdict = 'Envoie ce défi à un ami : il aura exactement les mêmes questions.';
       if(rival!=null) verdict = score>rival ? `Gagné ! Tu bats son ${rival}/5.` : (score===rival ? `Égalité : ${rival}/5 chacun.` : `Perdu : il fallait battre ${rival}/5.`);
       body.innerHTML = `<div class="mx-dq"><div class="n">RÉSULTAT</div><h3>${score}/5</h3><div class="mx-grid">${grid}</div><p style="font-size:13px;color:var(--ink-soft)">${esc(verdict)}</p><div class="mx-actions"><button type="button" class="mx-sharebtn" id="mx-fshare">⚔️ ${rival==null?'Défier un ami':'Renvoyer le défi'}</button><button type="button" class="mx-sharebtn" id="mx-fnew">Nouveau défi</button></div></div>`;
+      window.mxEvt && window.mxEvt('defi', {marks});
       $('#mx-fshare').addEventListener('click', ()=> shareDefi(seed, marks, $('#mx-fshare')));
       $('#mx-fnew').addEventListener('click', ()=> openDefi(newSeed(), null));
     }
@@ -9337,5 +9348,259 @@ var QRC=__r('index'),EC=__r('QRErrorCorrectLevel');window.mxQR=function(t){var q
 })();
 </script>
 
+
+<style id="mx-v14-css">/* ===== v14 : progression, classement, saison ===== */
+#mx-xpchip{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--ink,#0a0a0a);background:var(--paper,#fff);color:var(--ink,#0a0a0a);padding:5px 10px;font:700 11px/1 var(--mono,'IBM Plex Mono',monospace);letter-spacing:.06em;cursor:pointer;white-space:nowrap}
+#mx-xpchip .bar{width:38px;height:5px;background:color-mix(in srgb,var(--ink,#000) 15%,transparent);position:relative;overflow:hidden}
+#mx-xpchip .bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#ff3b8a,#ffb347)}
+#mx-xpchip:focus-visible{outline:2px solid #ff3b8a;outline-offset:2px}
+.mx14-ov{position:fixed;inset:0;z-index:99990;background:rgba(10,10,10,.55);display:none;align-items:flex-start;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px 16px;overflow:auto}
+.mx14-ov.open{display:flex}
+.mx14-box{background:var(--paper,#fff);color:var(--ink,#0a0a0a);border:2px solid var(--ink,#0a0a0a);width:100%;max-width:560px;margin-top:4vh;box-shadow:8px 8px 0 #ff3b8a}
+.mx14-h{display:flex;align-items:center;border-bottom:2px solid var(--ink,#0a0a0a)}
+.mx14-h h2{flex:1;margin:0;padding:14px 16px;font:400 18px/1.1 var(--display,'Archivo Black',sans-serif)}
+.mx14-x{border:0;border-left:2px solid var(--ink,#0a0a0a);background:none;color:inherit;font-size:22px;width:48px;height:48px;cursor:pointer}
+.mx14-b{padding:16px}
+.mx14-lv{display:flex;align-items:center;gap:14px}
+.mx14-lv .n{width:64px;height:64px;flex:none;display:grid;place-items:center;border:2px solid var(--ink,#0a0a0a);background:linear-gradient(135deg,#ff3b8a,#ffb347);color:#0a0a0a;font:400 26px/1 var(--display,'Archivo Black',sans-serif)}
+.mx14-lv .t{font:400 17px/1.2 var(--display,'Archivo Black',sans-serif)}
+.mx14-lv .s{font:600 11px/1.4 var(--mono,monospace);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft,#555)}
+.mx14-pb{height:10px;border:1.5px solid var(--ink,#0a0a0a);margin:12px 0 4px;position:relative;overflow:hidden}
+.mx14-pb i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#ff3b8a,#ffb347)}
+.mx14-sec{font:700 11px/1 var(--mono,monospace);letter-spacing:.12em;text-transform:uppercase;margin:18px 0 10px;color:var(--ink-soft,#555)}
+.mx14-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mx14-stats div{border:1.5px solid var(--ink,#0a0a0a);padding:8px;text-align:center;font:600 10px/1.3 var(--mono,monospace);text-transform:uppercase;letter-spacing:.04em}
+.mx14-stats b{display:block;font:400 20px/1.1 var(--display,'Archivo Black',sans-serif);margin-bottom:2px;font-variant-numeric:tabular-nums}
+.mx14-badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.mx14-badge{border:1.5px solid var(--ink,#0a0a0a);padding:9px 8px;text-align:center}
+.mx14-badge i{display:block;font-style:normal;font-size:26px;line-height:1.1}
+.mx14-badge b{display:block;font:700 12px/1.25 Inter,sans-serif;margin:4px 0 2px}
+.mx14-badge span{display:block;font:500 10.5px/1.3 Inter,sans-serif;color:var(--ink-soft,#555)}
+.mx14-badge.off{opacity:.38;filter:grayscale(1)}
+.mx14-badge.on{box-shadow:3px 3px 0 #ffb347}
+.mx14-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.mx14-btn{border:2px solid var(--ink,#0a0a0a);background:var(--paper,#fff);color:var(--ink,#0a0a0a);padding:9px 12px;font:700 12px/1 Inter,sans-serif;cursor:pointer}
+.mx14-btn.pri{background:#0a0a0a;color:#fff;box-shadow:3px 3px 0 #ff3b8a}
+.mx14-btn:disabled{opacity:.5;cursor:default}
+.mx14-btn:focus-visible{outline:2px solid #ff3b8a;outline-offset:2px}
+.mx14-note{font:500 12px/1.45 Inter,sans-serif;color:var(--ink-soft,#555);margin:8px 0 0}
+/* classement */
+.mx14-tabs{display:flex;border:2px solid var(--ink,#0a0a0a);margin-bottom:10px}
+.mx14-tabs button{flex:1;border:0;background:none;color:inherit;padding:9px;font:700 12px/1 Inter,sans-serif;cursor:pointer}
+.mx14-tabs button[aria-pressed=true]{background:#0a0a0a;color:#fff}
+.mx14-lb{list-style:none;margin:0;padding:0}
+.mx14-lb li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 6px;border-bottom:1px solid color-mix(in srgb,var(--ink,#000) 15%,transparent);font:600 13px/1.2 Inter,sans-serif}
+.mx14-lb li .r{font:400 15px/1 var(--display,'Archivo Black',sans-serif);text-align:center;font-variant-numeric:tabular-nums}
+.mx14-lb li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mx14-lb li .sc{font:700 12px/1 var(--mono,monospace);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.mx14-lb li.me{background:color-mix(in srgb,#ffb347 28%,transparent)}
+.mx14-lb li:nth-child(1) .r{color:#e0a400}.mx14-lb li:nth-child(2) .r{color:#8a8f98}.mx14-lb li:nth-child(3) .r{color:#b8733a}
+.mx14-streak{display:flex;align-items:center;gap:10px;border:2px solid var(--ink,#0a0a0a);padding:10px 12px;margin:12px 0;font:700 13px/1.3 Inter,sans-serif;text-align:left}
+.mx14-streak big{font:400 26px/1 var(--display,'Archivo Black',sans-serif)}
+.mx14-pseudo{display:flex;gap:8px;margin-top:8px}
+.mx14-pseudo input{flex:1;min-width:0;border:2px solid var(--ink,#0a0a0a);padding:9px;font:600 14px/1 Inter,sans-serif;background:var(--paper,#fff);color:var(--ink,#0a0a0a)}
+/* toasts */
+#mx14-toasts{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:99995;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.mx14-toast{background:#0a0a0a;color:#fff;border:2px solid #fff;box-shadow:4px 4px 0 #ff3b8a;padding:9px 12px;font:700 13px/1.3 Inter,sans-serif;max-width:280px;animation:mx14in .35s cubic-bezier(.2,1.4,.4,1) both}
+.mx14-toast small{display:block;font-weight:500;opacity:.8;margin-top:2px}
+@keyframes mx14in{from{transform:translateY(16px) scale(.9);opacity:0}to{transform:none;opacity:1}}
+#main-nav .nav-btn{white-space:nowrap}
+@media (max-width:1600px){#mx-xpchip .bar{display:none}#mx-xpchip .lv{display:none}}
+@media (max-width:760px){#mx14-toasts{bottom:calc(76px + env(safe-area-inset-bottom,0px))}#mx-xpchip .bar{display:none}}
+/* saison */
+#view-saison .ss-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+#view-saison .ss-sort{display:flex;border:2px solid var(--ink,#0a0a0a)}
+#view-saison .ss-sort button{border:0;background:none;color:inherit;padding:8px 12px;font:700 12px/1 Inter,sans-serif;cursor:pointer}
+#view-saison .ss-sort button[aria-pressed=true]{background:#0a0a0a;color:#fff}
+.ss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px}
+.ss-card{border:1.5px solid var(--ink,#0a0a0a);background:var(--paper,#fff);display:flex;flex-direction:column;min-width:0}
+.ss-cover{aspect-ratio:2/3;background:#ddd center/cover no-repeat;position:relative;border-bottom:1.5px solid var(--ink,#0a0a0a)}
+.ss-cover .ep{position:absolute;left:6px;bottom:6px;background:#0a0a0a;color:#fff;font:700 10.5px/1.2 var(--mono,monospace);padding:4px 6px;max-width:calc(100% - 12px)}
+.ss-cover .sc{position:absolute;right:6px;top:6px;background:#ffb347;color:#0a0a0a;font:700 11px/1 var(--mono,monospace);padding:4px 6px}
+.ss-body{padding:9px;display:flex;flex-direction:column;gap:5px;flex:1}
+.ss-body h3{margin:0;font:700 13.5px/1.25 Inter,sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ss-body .meta{font:600 10.5px/1.35 var(--mono,monospace);text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft,#555)}
+.ss-body .gen{font:500 11px/1.35 Inter,sans-serif;color:var(--ink-soft,#555)}
+.ss-body .go{margin-top:auto;border:1.5px solid var(--ink,#0a0a0a);background:none;color:inherit;padding:7px;font:700 11.5px/1 Inter,sans-serif;cursor:pointer;text-align:center;text-decoration:none}
+.ss-body .go.in{background:#0a0a0a;color:#fff}
+.ss-msg{padding:30px 10px;text-align:center;font:600 14px/1.5 Inter,sans-serif}
+@media (max-width:480px){.ss-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+</style>
+<script id="mx-v14-js">(function(){
+'use strict';
+function $(i){return document.getElementById(i)}
+function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function dkeyOf(d){return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()}
+function daysAgo(n){var d=new Date();d.setDate(d.getDate()-n);return dkeyOf(d)}
+var TODAY=dkeyOf(new Date());
+function me(){try{return (typeof currentUser!=='undefined'&&currentUser)?currentUser:null}catch(e){return null}}
+function hash(s){try{return simpleHash(s)}catch(e){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h)+s.charCodeAt(i);h=h&h}return 'h'+Math.abs(h).toString(16)}}
+function uid(){var u=me();if(u&&u.email)return 'u'+hash(String(u.email).toLowerCase());var g=ls('mx_guest');if(!g){g='g'+Math.random().toString(36).slice(2,11);ls('mx_guest',g)}return g}
+function pseudo(){var u=me();if(u&&u.name)return String(u.name).slice(0,20);return ls('mx_pseudo')||''}
+function fbReady(){return new Promise(function(r){if(window.fbReady)return r(true);var t=setTimeout(function(){r(!!window.fbReady)},5000);window.addEventListener('firebase-ready',function(){clearTimeout(t);r(true)},{once:true})})}
+
+// ---------- toasts ----------
+var tw=document.createElement('div');tw.id='mx14-toasts';tw.setAttribute('aria-live','polite');document.body.appendChild(tw);
+function toast(t,s){var d=document.createElement('div');d.className='mx14-toast';d.innerHTML=esc(t)+(s?'<small>'+esc(s)+'</small>':'');tw.appendChild(d);setTimeout(function(){d.remove()},3600)}
+
+// ---------- série (jours d'affilée au défi du jour) ----------
+function playedDays(){return ls('mx_days')||[]}
+function streakNow(){var set={};playedDays().forEach(function(d){set[d]=1});var n=0,i=set[TODAY]?0:1;while(set[daysAgo(i)]){n++;i++}return n}
+
+// ---------- XP, niveaux, badges ----------
+var ST=ls('mx_xp')||{xp:0,c:{},b:{},seen:{},best:0,done:{}};ST.c=ST.c||{};ST.b=ST.b||{};ST.seen=ST.seen||{};ST.done=ST.done||{};
+function save(){ls('mx_xp',ST);syncSoon()}
+function lvlOf(x){return Math.max(1,Math.floor((1+Math.sqrt(1+0.08*x))/2))}
+function lvlStart(l){return 50*l*(l-1)}
+var TITLES=[[20,'Légende'],[16,'Maître'],[12,'Sensei'],[8,'Senpai'],[5,'Otaku'],[3,'Fan'],[1,'Nouveau venu']];
+function titleOf(l){for(var i=0;i<TITLES.length;i++)if(l>=TITLES[i][0])return TITLES[i][1];return 'Nouveau venu'}
+var BADGES=[
+ ['first_daily','🎯','Premier défi','Finir un défi du jour',function(c){return (c.daily||0)>=1}],
+ ['perfect','✨','Sans faute','5/5 au défi du jour',function(c){return (c.perfect||0)>=1}],
+ ['streak3','🔥','En feu','3 jours d\'affilée',function(c,s){return s.best>=3}],
+ ['streak7','🔥','Semaine parfaite','7 jours d\'affilée',function(c,s){return s.best>=7}],
+ ['streak30','🌋','Inarrêtable','30 jours d\'affilée',function(c,s){return s.best>=30}],
+ ['quiz50','🧠','Cerveau d\'otaku','50 bonnes réponses au quiz',function(c){return (c.quizOk||0)>=50}],
+ ['bt25','🎵','Oreille absolue','25 musiques reconnues',function(c){return (c.btOk||0)>=25}],
+ ['fiches50','📚','Encyclopédiste','50 fiches consultées',function(c){return (c.fiches||0)>=50}],
+ ['imp1','🕵️','Premier interrogatoire','Finir une partie d\'Imposteur',function(c){return (c.imp||0)>=1}],
+ ['auc1','💰','Premier coup de marteau','Finir une partie d\'Enchères',function(c){return (c.auc||0)>=1}],
+ ['games10','🎮','Pilier des soirées','10 parties de jeux',function(c){return (c.imp||0)+(c.auc||0)>=10}],
+ ['defi5','⚔️','Duelliste','5 défis entre amis',function(c){return (c.defi||0)>=5}],
+ ['share1','📣','Ambassadeur','Partager un score',function(c){return (c.share||0)>=1}],
+ ['lvl10','👑','Niveau 10','Atteindre le niveau 10',function(c,s){return lvlOf(s.xp)>=10}]];
+function addXP(n,why){var before=lvlOf(ST.xp);ST.xp+=n;if(n>0)toast('+'+n+' XP',why);var after=lvlOf(ST.xp);if(after>before)setTimeout(function(){toast('Niveau '+after+' !','Tu es maintenant « '+titleOf(after)+' »')},400);checkBadges();save();renderChip()}
+function checkBadges(){ST.best=Math.max(ST.best||0,streakNow());BADGES.forEach(function(b,i){if(!ST.b[b[0]]&&b[4](ST.c,ST)){ST.b[b[0]]=Date.now();setTimeout(function(){toast(b[1]+' Badge débloqué : '+b[2],b[3])},700+i*50)}})}
+function inc(k,n){ST.c[k]=(ST.c[k]||0)+(n||1)}
+
+// synchro du compte (si connecté) : on garde le maximum de chaque compteur
+var syncT=null;
+function syncSoon(){clearTimeout(syncT);syncT=setTimeout(syncNow,2500)}
+function syncNow(){var u=me();if(!u||!window.fbMergeDoc)return;window.fbMergeDoc('chat_meta','xp_'+uid(),{n:pseudo(),xp:ST.xp,c:ST.c,b:ST.b,best:ST.best||0,ts:Date.now()}).catch(function(){})}
+async function pullRemote(){var u=me();if(!u)return;await fbReady();if(!window.fbGetDoc)return;try{var r=await window.fbGetDoc('chat_meta','xp_'+uid());if(!r)return syncNow();var ch=false;if((r.xp||0)>ST.xp){ST.xp=r.xp;ch=true}
+ Object.keys(r.c||{}).forEach(function(k){if((r.c[k]||0)>(ST.c[k]||0)){ST.c[k]=r.c[k];ch=true}});Object.keys(r.b||{}).forEach(function(k){if(!ST.b[k]){ST.b[k]=r.b[k];ch=true}});if((r.best||0)>(ST.best||0)){ST.best=r.best;ch=true}
+ if(ch){ls('mx_xp',ST);renderChip()}syncSoon()}catch(e){}}
+
+// ---------- événements des jeux ----------
+var pendingDaily=null;
+window.mxEvt=function(type,d){d=d||{};try{
+ if(type==='daily'){var ok=(d.marks||[]).filter(Boolean).length;var days=playedDays();if(days.indexOf(TODAY)<0){days.push(TODAY);ls('mx_days',days.slice(-400))}
+  if(ST.done['d'+TODAY])return;ST.done['d'+TODAY]=1;inc('daily');if(ok===5)inc('perfect');var stv=streakNow();ST.best=Math.max(ST.best||0,stv);
+  pendingDaily={s:ok,t:Math.max(1000,Math.min(d.ms||600000,3600000))};addXP(10*ok+20+5*Math.min(stv,10),'Défi du jour · '+ok+'/5'+(stv>1?' · série '+stv:''))}
+ else if(type==='defi'){inc('defi');addXP(5*(d.marks||[]).filter(Boolean).length+10,'Défi entre amis')}
+ else if(type==='quiz'){if(d.ok){inc('quizOk');addXP(5,'Bonne réponse au quiz')}}
+ else if(type==='bt'){if(d.ok){inc('btOk');addXP(6,'Musique reconnue')}}
+ else if(type==='imp'||type==='auc'){var key=type+'_'+(d.room||('local'+Date.now()));if(d.room&&ST.done[key])return;ST.done[key]=1;inc(type);addXP(25,type==='imp'?'Partie d\'Imposteur':'Partie d\'Enchères')}
+ else if(type==='fiche'){if(!d.key||ST.seen[d.key])return;ST.seen[d.key]=1;inc('fiches');addXP(2,null)}
+ else if(type==='share'){inc('share');checkBadges();save()}
+}catch(e){}};
+// fiches consultées
+try{var _od=openDetail;openDetail=function(id,type){var r=_od.apply(this,arguments);window.mxEvt('fiche',{key:type+':'+id});return r}}catch(e){}
+// partages de score
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#mx-dshare,#mx-fshare,#mx-dduel');if(b)window.mxEvt('share')},true);
+
+// ---------- pastille d'XP dans l'en-tête ----------
+var chip=document.createElement('button');chip.type='button';chip.id='mx-xpchip';chip.setAttribute('aria-label','Ma progression');
+var hr=document.querySelector('.header-right');if(hr)hr.insertBefore(chip,hr.querySelector('#main-nav')?hr.querySelector('#main-nav').nextSibling:hr.firstChild);
+function renderChip(){var l=lvlOf(ST.xp),a=lvlStart(l),b=lvlStart(l+1),p=Math.round(100*(ST.xp-a)/(b-a));chip.innerHTML='⭐ <span class="lv">NIV. </span>'+l+'<span class="bar"><i style="width:'+p+'%"></i></span>';chip.title=ST.xp+' XP · '+titleOf(l)}
+renderChip();chip.addEventListener('click',function(){openProg()});
+
+// ---------- fenêtres ----------
+function modal(id,title){var o=$(id);if(o)return o;o=document.createElement('div');o.className='mx14-ov';o.id=id;o.setAttribute('role','dialog');o.setAttribute('aria-label',title);
+ o.innerHTML='<div class="mx14-box"><div class="mx14-h"><h2>'+esc(title)+'</h2><button type="button" class="mx14-x" aria-label="Fermer">×</button></div><div class="mx14-b"></div></div>';document.body.appendChild(o);
+ o.addEventListener('click',function(e){if(e.target===o||e.target.closest('.mx14-x'))o.classList.remove('open')});document.addEventListener('keydown',function(e){if(e.key==='Escape')o.classList.remove('open')});return o}
+function progHTML(){var l=lvlOf(ST.xp),a=lvlStart(l),b=lvlStart(l+1),p=Math.round(100*(ST.xp-a)/(b-a)),s=streakNow(),c=ST.c,nb=Object.keys(ST.b).length;
+ return '<div class="mx14-lv"><div class="n">'+l+'</div><div><div class="t">'+esc(titleOf(l))+'</div><div class="s">'+ST.xp+' XP · encore '+(b-ST.xp)+' XP pour le niveau '+(l+1)+'</div></div></div>'+
+ '<div class="mx14-pb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+p+'"><i style="width:'+p+'%"></i></div>'+
+ '<div class="mx14-sec">Statistiques</div><div class="mx14-stats"><div><b>🔥 '+s+'</b>Série actuelle</div><div><b>'+(ST.best||0)+'</b>Meilleure série</div><div><b>'+(c.daily||0)+'</b>Défis du jour</div><div><b>'+(c.quizOk||0)+'</b>Bonnes réponses quiz</div><div><b>'+(c.btOk||0)+'</b>Musiques trouvées</div><div><b>'+((c.imp||0)+(c.auc||0))+'</b>Parties en ligne</div></div>'+
+ '<div class="mx14-sec">Badges · '+nb+'/'+BADGES.length+'</div><div class="mx14-badges">'+BADGES.map(function(x){var on=!!ST.b[x[0]];return '<div class="mx14-badge '+(on?'on':'off')+'"><i>'+x[1]+'</i><b>'+esc(x[2])+'</b><span>'+esc(x[3])+'</span></div>'}).join('')+'</div>'+
+ '<div class="mx14-row"><button type="button" class="mx14-btn pri" data-lb>🏆 Classement du défi</button>'+pushBtn()+'</div>'+
+ (me()?'':'<p class="mx14-note">Connecte-toi pour retrouver ta progression sur tous tes appareils.</p>')}
+function openProg(){var o=modal('mx14-prog','Ma progression');var b=o.querySelector('.mx14-b');b.innerHTML=progHTML();wire(b);o.classList.add('open')}
+function wire(root){root.querySelectorAll('[data-lb]').forEach(function(x){x.onclick=function(){openBoard()}});root.querySelectorAll('[data-push]').forEach(function(x){x.onclick=function(){togglePush(x)}})}
+
+// ---------- classement ----------
+function sortE(a,b){return b.s-a.s||a.t-b.t}
+async function dayBoard(dk){await fbReady();if(!window.fbGetDoc)throw new Error('off');var d=await window.fbGetDoc('chat_meta','lb_'+dk);var s=(d&&d.s)||{};return Object.keys(s).map(function(k){var e=s[k];return {u:k,n:e.n,s:+e.s||0,t:+e.t||0,st:+e.st||0}}).sort(sortE)}
+async function weekBoard(){var ks=[];for(var i=0;i<7;i++)ks.push(daysAgo(i));var all=await Promise.all(ks.map(function(k){return dayBoard(k).catch(function(){return []})}));var m={};
+ all.forEach(function(list){list.forEach(function(e){var x=m[e.u]||(m[e.u]={u:e.u,n:e.n,s:0,t:0,d:0});x.s+=e.s;x.t+=e.t;x.d++})});return Object.keys(m).map(function(k){return m[k]}).sort(sortE)}
+function fmtT(ms){var s=Math.round(ms/1000);return s<60?s+' s':Math.floor(s/60)+' min '+String(s%60).padStart(2,'0')}
+function listHTML(list,week){var mine=uid();if(!list.length)return '<p class="mx14-note">Personne n\'a encore joué. Sois le premier !</p>';var top=list.slice(0,10),idx=list.findIndex(function(e){return e.u===mine});
+ var row=function(e,i){return '<li class="'+(e.u===mine?'me':'')+'"><span class="r">'+(i+1)+'</span><span class="nm">'+esc(e.n||'Anonyme')+(e.st>1&&!week?' 🔥'+e.st:'')+'</span><span class="sc">'+e.s+(week?' pts · '+e.d+' j':'/5 · '+fmtT(e.t))+'</span></li>'};
+ var h='<ol class="mx14-lb">'+top.map(row).join('')+'</ol>';if(idx>=10)h+='<ol class="mx14-lb" start="'+(idx+1)+'">'+row(list[idx],idx)+'</ol>';return h}
+function boardBox(el){el.innerHTML='<div class="mx14-tabs" role="group" aria-label="Période"><button type="button" aria-pressed="true" data-p="day">Aujourd\'hui</button><button type="button" aria-pressed="false" data-p="week">7 derniers jours</button></div><div class="mx14-lbw"><p class="mx14-note">Chargement…</p></div>';
+ var w=el.querySelector('.mx14-lbw');function load(p){el.querySelectorAll('.mx14-tabs button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.p===p)});w.innerHTML='<p class="mx14-note">Chargement…</p>';
+  (p==='day'?dayBoard(TODAY):weekBoard()).then(function(l){w.innerHTML=listHTML(l,p==='week')}).catch(function(){w.innerHTML='<p class="mx14-note">Classement indisponible pour le moment. Réessaie plus tard.</p>'})}
+ el.querySelectorAll('.mx14-tabs button').forEach(function(b){b.onclick=function(){load(b.dataset.p)}});load('day')}
+function openBoard(){var o=modal('mx14-board','Classement du défi du jour');var b=o.querySelector('.mx14-b');b.innerHTML='<div class="mx14-streak"><big>🔥 '+streakNow()+'</big><span>jour'+(streakNow()>1?'s':'')+' d\'affilée<br><span class="mx14-note" style="margin:0">Joue chaque jour pour garder ta série.</span></span></div><div class="mx14-bx"></div><p class="mx14-note">Classement : meilleur score, puis temps le plus court.</p>';boardBox(b.querySelector('.mx14-bx'));o.classList.add('open')}
+async function submitDaily(){if(!pendingDaily||ls('mx_lbsent_'+TODAY))return true;var n=pseudo();if(!n)return false;await fbReady();if(!window.fbMergeDoc)return true;var e={n:n.slice(0,20),s:pendingDaily.s,t:pendingDaily.t,st:streakNow(),ts:Date.now()},o={};o[uid()]=e;
+ try{await window.fbMergeDoc('chat_meta','lb_'+TODAY,{s:o});ls('mx_lbsent_'+TODAY,1)}catch(err){}return true}
+// encart sous le résultat du défi du jour
+window.mxDailyEnd=function(body,marks){try{var box=document.createElement('div');var s=streakNow();
+ box.innerHTML='<div class="mx14-streak"><big>🔥 '+s+'</big><span>jour'+(s>1?'s':'')+' d\'affilée'+(s>=2?' — continue demain !':' — reviens demain pour lancer ta série')+'</span></div><div class="mx14-ps"></div><div class="mx14-sec">Classement du jour</div><div class="mx14-bx"></div><div class="mx14-row">'+pushBtn()+'</div>';
+ body.querySelector('.mx-dq')?body.querySelector('.mx-dq').appendChild(box):body.appendChild(box);wire(box);
+ var ps=box.querySelector('.mx14-ps'),bx=box.querySelector('.mx14-bx');
+ function showBoard(){boardBox(bx)}
+ if(!pendingDaily&&!ls('mx_lbsent_'+TODAY)){var sv=(marks||[]).filter(Boolean).length;pendingDaily={s:sv,t:600000}}
+ submitDaily().then(function(ok){if(ok)return showBoard();
+  ps.innerHTML='<p class="mx14-note" style="margin-top:0">Choisis un pseudo pour apparaître dans le classement :</p><form class="mx14-pseudo"><input id="mx14-pseudo-in" maxlength="20" placeholder="Ton pseudo" aria-label="Pseudo" required><button class="mx14-btn pri" type="submit">Valider</button></form>';
+  ps.querySelector('form').onsubmit=function(ev){ev.preventDefault();var v=ps.querySelector('input').value.trim().replace(/\s+/g,' ').slice(0,20);if(!v)return;ls('mx_pseudo',v);ps.innerHTML='';submitDaily().then(showBoard)};showBoard()})}catch(e){}};
+
+// ---------- rappel quotidien (notifications) ----------
+function pushOk(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
+function pushOn(){return ls('mx_push')==='on'&&pushOk()&&Notification.permission==='granted'}
+function pushBtn(){if(!pushOk())return '<span class="mx14-note" style="margin:0">🔔 Rappels : installe l\'appli ANIMEDEX sur ton écran d\'accueil pour les activer.</span>';return '<button type="button" class="mx14-btn" data-push>'+(pushOn()?'🔕 Arrêter le rappel quotidien':'🔔 Me rappeler le défi chaque jour')+'</button>'}
+function b64ToU8(s){var p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+async function togglePush(btn){btn.disabled=true;try{var reg=await navigator.serviceWorker.ready;var cur=await reg.pushManager.getSubscription();
+ if(pushOn()){if(cur){await fetch('/api/push?a=unsub',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur.toJSON())}).catch(function(){});await cur.unsubscribe()}ls('mx_push','off');toast('Rappel désactivé');}
+ else{var perm=await Notification.requestPermission();if(perm!=='granted'){toast('Notifications refusées','Tu peux les autoriser dans les réglages du navigateur.');btn.disabled=false;return}
+  var sub=cur;if(!sub){var kr=await fetch('/api/push?a=key');var kj=await kr.json();if(!kj.key)throw new Error('key');sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToU8(kj.key)})}var r=await fetch('/api/push?a=sub',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub.toJSON())});
+  if(!r.ok)throw new Error('srv');ls('mx_push','on');toast('Rappel activé 🔔','Tu recevras une notification chaque matin.')}}
+ catch(e){toast('Impossible d\'activer le rappel','Réessaie dans un moment.')}
+ btn.disabled=false;btn.textContent=pushOn()?'🔕 Arrêter le rappel quotidien':'🔔 Me rappeler le défi chaque jour'}
+
+// ---------- boutons d'accès ----------
+var hero=document.querySelector('#view-anime .hero');
+if(hero){var b=document.createElement('button');b.type='button';b.className='mx-daily-btn mx-rand-btn';b.id='mx-lb-btn';b.textContent='🏆 CLASSEMENT';b.onclick=openBoard;var dbt=$('mx-defi-btn');if(dbt&&dbt.parentNode===hero)dbt.insertAdjacentElement('afterend',b);else hero.appendChild(b)}
+// profil : encart progression
+function profBox(){var v=$('view-profile');if(!v)return;var x=$('mx14-prof');if(!x){x=document.createElement('div');x.id='mx14-prof';x.style.cssText='border:2px solid var(--ink,#0a0a0a);padding:16px;margin:0 0 22px';var h=v.querySelector('.hero');(h||v.firstElementChild||v).insertAdjacentElement(h?'afterend':'afterbegin',x)}x.innerHTML='<div class="mx14-sec" style="margin-top:0">Ma progression</div>'+progHTML();wire(x)}
+try{var _op=openProfile;openProfile=function(){var r=_op.apply(this,arguments);setTimeout(profBox,0);return r}}catch(e){}
+// lien des notifications : ?daily=1 ouvre le défi
+if(/[?&]daily=1/.test(location.search)){window.addEventListener('load',function(){setTimeout(function(){var b=$('mx-daily-btn');if(b)b.click()},900)})}
+
+// ---------- page « Anime de la saison » ----------
+var GFR={Action:'Action',Adventure:'Aventure',Comedy:'Comédie',Drama:'Drame',Ecchi:'Ecchi',Fantasy:'Fantasy',Horror:'Horreur','Mahou Shoujo':'Magical girl',Mecha:'Mecha',Music:'Musique',Mystery:'Mystère',Psychological:'Psychologique',Romance:'Romance','Sci-Fi':'Science-fiction','Slice of Life':'Tranche de vie',Sports:'Sport',Supernatural:'Surnaturel',Thriller:'Thriller'};
+var SNAME={WINTER:'Hiver',SPRING:'Printemps',SUMMER:'Été',FALL:'Automne'};
+function seasonNow(){var d=new Date(),m=d.getMonth(),y=d.getFullYear();var s=m<=1?'WINTER':m<=4?'SPRING':m<=7?'SUMMER':m<=10?'FALL':'WINTER';if(m===11)y++;return {s:s,y:y}}
+var nzt=function(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim()};
+var AMAP=null;function amap(){if(AMAP)return AMAP;AMAP={};try{ANIME.forEach(function(a){var r=/cover\/[a-zA-Z]+\/[a-z]*(\d+)-/.exec(a.image||'');if(r)AMAP[r[1]]=a})}catch(e){}return AMAP}
+function findLocal(m){var mp=amap();if(mp[m.id])return mp[m.id];var rel=(m.relations&&m.relations.edges)||[];for(var k=0;k<rel.length;k++){var e=rel[k];if(/PREQUEL|SEQUEL|PARENT|SIDE_STORY|ALTERNATIVE/.test(e.relationType)&&mp[e.node.id])return mp[e.node.id]}try{var c=[m.title.english,m.title.romaji].concat(m.synonyms||[]).filter(Boolean).map(nzt);for(var i=0;i<ANIME.length;i++){var t=nzt(ANIME[i].title);if(c.some(function(x){return x===t||(t.length>5&&x.indexOf(t)===0)}))return ANIME[i]}}catch(e){}return null}
+function untilTxt(sec){var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);return d>0?d+' j '+h+' h':h>0?h+' h '+m+' min':m+' min'}
+var SS={data:null,sort:'pop'};
+async function loadSeason(){var sn=seasonNow(),ck='mx_season_'+sn.s+sn.y,c=null;try{c=JSON.parse(sessionStorage.getItem(ck)||'null')}catch(e){}if(c&&Date.now()-c.ts<3*3600e3)return c.list;
+ var q='query($s:MediaSeason,$y:Int,$p:Int){Page(page:$p,perPage:50){pageInfo{hasNextPage}media(season:$s,seasonYear:$y,type:ANIME,isAdult:false,sort:POPULARITY_DESC,format_in:[TV,TV_SHORT,ONA]){id title{romaji english} synonyms coverImage{large} genres episodes status averageScore nextAiringEpisode{episode airingAt} studios(isMain:true){nodes{name}} relations{edges{relationType node{id}}} siteUrl}}}';
+ var list=[];for(var p=1;p<=2;p++){var r=await fetch('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({query:q,variables:{s:sn.s,y:sn.y,p:p}})});if(!r.ok)throw new Error('http');var j=await r.json();list=list.concat(j.data.Page.media);if(!j.data.Page.pageInfo.hasNextPage)break}
+ try{sessionStorage.setItem(ck,JSON.stringify({ts:Date.now(),list:list}))}catch(e){}return list}
+function cardHTML(m){var loc=findLocal(m),nx=m.nextAiringEpisode,now=Date.now()/1000,ep=nx?'Ép. '+nx.episode+' dans '+untilTxt(nx.airingAt-now):(m.status==='FINISHED'?'Terminé'+(m.episodes?' · '+m.episodes+' ép.':''):(m.episodes?m.episodes+' épisodes':'À venir'));
+ var st=(m.studios&&m.studios.nodes[0]&&m.studios.nodes[0].name)||'';var g=(m.genres||[]).slice(0,3).map(function(x){return GFR[x]||x}).join(' · ');var t=m.title.english||m.title.romaji;
+ return '<article class="ss-card"><div class="ss-cover" style="background-image:url(\''+esc(m.coverImage.large)+'\')" role="img" aria-label="'+esc(t)+'">'+(m.averageScore?'<span class="sc">★ '+(m.averageScore/10).toFixed(1)+'</span>':'')+'<span class="ep">'+esc(ep)+'</span></div><div class="ss-body"><h3>'+esc(t)+'</h3><div class="meta">'+esc(st)+'</div><div class="gen">'+esc(g)+'</div>'+
+ (loc?'<button type="button" class="go in" data-id="'+esc(loc.id)+'">Voir la fiche ANIMEDEX</button>':'<a class="go" href="'+esc(m.siteUrl)+'" target="_blank" rel="noopener">Plus d\'infos ↗</a>')+'</div></article>'}
+function renderSeason(){var g=$('ss-grid');if(!g||!SS.data)return;var l=SS.data.slice();if(SS.sort==='next')l.sort(function(a,b){var x=a.nextAiringEpisode?a.nextAiringEpisode.airingAt:9e12,y=b.nextAiringEpisode?b.nextAiringEpisode.airingAt:9e12;return x-y});
+ g.innerHTML=l.map(cardHTML).join('');g.querySelectorAll('button.go[data-id]').forEach(function(b){b.onclick=function(){openDetail(b.dataset.id,'anime')}})}
+function buildSeasonView(){if($('view-saison'))return;var sn=seasonNow();var sec=document.createElement('section');sec.className='view';sec.id='view-saison';
+ sec.innerHTML='<div class="hero"><div class="eyebrow">Mis à jour en direct</div><h1>Anime de la saison</h1><p>'+SNAME[sn.s]+' '+sn.y+' : les séries en cours de diffusion et le compte à rebours avant le prochain épisode.</p></div><div class="ss-head"><div class="mx14-sec" style="margin:0">'+SNAME[sn.s]+' '+sn.y+'</div><div class="ss-sort" role="group" aria-label="Trier"><button type="button" aria-pressed="true" data-s="pop">Populaires</button><button type="button" aria-pressed="false" data-s="next">Prochains épisodes</button></div></div><div class="ss-grid" id="ss-grid"><div class="ss-msg">Chargement de la saison…</div></div><p class="mx14-note">Données : AniList. Les séries déjà présentes sur ANIMEDEX ouvrent directement leur fiche.</p>';
+ var main=document.querySelector('.view')?document.querySelector('.view').parentNode:document.body;main.appendChild(sec);
+ sec.querySelectorAll('.ss-sort button').forEach(function(b){b.onclick=function(){SS.sort=b.dataset.s;sec.querySelectorAll('.ss-sort button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});renderSeason()}})}
+function openSeason(){buildSeasonView();switchView('saison');if(SS.data)return renderSeason();loadSeason().then(function(l){SS.data=l;renderSeason()}).catch(function(){var g=$('ss-grid');if(g)g.innerHTML='<div class="ss-msg">Impossible de charger la saison pour le moment.<br><button type="button" class="mx14-btn" id="ss-retry" style="margin-top:10px">Réessayer</button></div>';var r=$('ss-retry');if(r)r.onclick=openSeason})}
+window.mxOpenSeason=openSeason;
+(function navs(){var nav=$('main-nav');if(nav&&!nav.querySelector('[data-view=saison]')){var b=document.createElement('button');b.className='nav-btn';b.dataset.view='saison';b.textContent='Saison';var ref=nav.querySelector('[data-view=quiz]');nav.insertBefore(b,ref||null);b.addEventListener('click',openSeason)}
+ var mp=$('mobile-nav-panel');if(mp&&!mp.querySelector('[data-view=saison]')){var m=document.createElement('button');m.className='mobile-nav-btn';m.dataset.view='saison';m.textContent='Saison';var r2=mp.querySelector('[data-view=quiz]');mp.insertBefore(m,r2||null);m.addEventListener('click',function(){mp.classList.remove('show');openSeason()})}
+ if(hero){var s=document.createElement('button');s.type='button';s.className='mx-daily-btn mx-rand-btn';s.textContent='🌸 ANIME DE LA SAISON';s.onclick=openSeason;hero.appendChild(s)}})();
+
+// démarrage
+checkBadges();renderChip();fbReady().then(pullRemote);
+})();
+</script>
 </body>
 </html>

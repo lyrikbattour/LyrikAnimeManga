@@ -2,7 +2,7 @@
 // Comme tout le contenu (images, données) est intégré directement dans index.html,
 // mettre index.html en cache suffit à rendre tout le catalogue consultable hors-ligne.
 
-const CACHE_NAME = 'animedex-cache-v2';
+const CACHE_NAME = 'animedex-cache-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -34,6 +34,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return; // laisse passer les requêtes externes normalement
+  if (event.request.method !== 'GET' || url.pathname.startsWith('/api/')) return; // pas de cache pour les envois et l'API
 
   event.respondWith(
     fetch(event.request)
@@ -44,4 +45,23 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
   );
+});
+
+// Notification quotidienne « Le défi du jour est dispo » (envoyée par /api/push?a=cron)
+self.addEventListener('push', (event) => {
+  event.waitUntil(self.registration.showNotification('🎯 Le défi du jour est dispo !', {
+    body: '5 nouvelles questions t\u2019attendent sur ANIMEDEX. Garde ta série 🔥',
+    icon: '/icon-192-v2.png',
+    badge: '/icon-192-v2.png',
+    tag: 'animedex-daily',
+    data: { url: '/?daily=1' }
+  }));
+});
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) { if (c.url.startsWith(self.location.origin) && 'focus' in c) { c.navigate(target); return c.focus(); } }
+    return self.clients.openWindow(target);
+  }));
 });
