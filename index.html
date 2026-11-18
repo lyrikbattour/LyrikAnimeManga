@@ -691,6 +691,10 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
 #dx-intro .dx-sign .nm{position:absolute;left:6%;right:6%;bottom:5%;background:#fff;color:#000;border:calc(var(--u)*.022) solid #000;font:400 var(--nf)/1.15 Bangers,Impact,sans-serif;letter-spacing:.04em;text-align:center;white-space:nowrap;overflow:hidden;z-index:1;padding:2% 0 0}
 #dx-intro .dx-sign .cap{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);background:#fff;color:#000;border:2px solid #000;box-shadow:3px 3px 0 var(--c);font:400 13px/1 Bangers,Impact,sans-serif;letter-spacing:.06em;padding:4px 7px 3px;white-space:nowrap;display:none}
 #dx-intro .dx-sign.small .cap{display:block}
+#dx-intro .dx-sign .cap.t{top:auto;bottom:100%;transform:translate(-50%,-6px)}
+#dx-intro .dx-sign .cap.l{left:auto;right:100%;top:50%;transform:translate(-6px,-50%)}
+#dx-intro .dx-sign .cap.r{left:100%;top:50%;transform:translate(6px,-50%)}
+
 #dx-intro .dx-sign.small .nm{display:none}
 #dx-intro .dx-sign.on .bd,#dx-intro .dx-sign:focus-visible .bd{box-shadow:0 0 calc(var(--u)*.25) var(--c),0 0 calc(var(--u)*.9) var(--c),inset 0 0 calc(var(--u)*.3) var(--c)}
 #dx-intro .dx-sign:focus-visible{outline:none}
@@ -793,6 +797,18 @@ function frame(now){if(done)return;requestAnimationFrame(frame);var dt=Math.min(
  else ono.style.opacity=0}
 requestAnimationFrame(frame);
 setTimeout(function(){root.classList.add('open')},250);
+// noms des petites enseignes : on cherche une place libre (dessous, dessus, gauche, droite)
+function inter(a,b){var w=Math.min(a.right,b.right)-Math.max(a.left,b.left),h=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);return w>0&&h>0?w*h:0}
+function fixCaps(){if(walk||done)return;var boxes=S8.map(function(s){return {k:s.k,r:signs[s.k].b.querySelector('.bd').getBoundingClientRect()}}),placed=[];
+ var order=S8.slice().sort(function(a,b){return cf.s[b.k][2]-cf.s[a.k][2]});
+ order.forEach(function(s){var b=signs[s.k].b,cap=b.querySelector('.cap');if(!b.classList.contains('small')){cap.className='cap';return}
+  var best=null;['','t','l','r'].forEach(function(p){if(best&&best.o===0)return;cap.className='cap'+(p?' '+p:'');var r=cap.getBoundingClientRect(),o=0;
+   if(r.left<4||r.right>W-4||r.top<4||r.bottom>H-4)o+=1e6;
+   boxes.forEach(function(x){if(x.k!==s.k)o+=inter(r,x.r)});placed.forEach(function(x){o+=inter(r,x)*2});
+   if(!best||o<best.o)best={p:p,o:o,r:r}});
+  cap.className='cap'+(best.p?' '+best.p:'');placed.push(cap.getBoundingClientRect())})}
+setTimeout(fixCaps,2100);setInterval(fixCaps,800);addEventListener('resize',function(){setTimeout(fixCaps,50)});
+
 // interactions
 function setHov(k){if(walk)return;hov=k;if(k){var c=cf.s[k];hop=1}}
 Object.keys(signs).forEach(function(k){var b=signs[k].b;b.addEventListener('mouseenter',function(){setHov(k)});b.addEventListener('mouseleave',function(){if(hov===k)setHov(null)});b.addEventListener('focus',function(){setHov(k)});b.addEventListener('blur',function(){if(hov===k)setHov(null)});b.addEventListener('click',function(e){e.preventDefault();go(k)})});
