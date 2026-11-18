@@ -671,6 +671,92 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ANIMEDEX","url":"https://animedexfr.fr/","inLanguage":"fr","description":"Encyclopédie anime & manga : fiches, personnages, OST, quiz et jeux entre amis."}</script>
 </head>
 <body>
+<!-- ==== ANIMEDEX — intro 3D (planète + lunes) ==== -->
+<style id="dx-intro-css">
+#dx-intro{position:fixed;inset:0;z-index:2147483000;background:radial-gradient(ellipse at 50% 45%,#2b1055 0%,#14072b 45%,#05020c 100%);color:#fff;overflow:hidden;font-family:Inter,system-ui,sans-serif;transition:opacity .55s ease,transform .55s ease;touch-action:none;user-select:none;-webkit-user-select:none}
+#dx-intro[hidden]{display:none}
+#dx-intro.out{opacity:0;transform:scale(1.06);pointer-events:none}
+#dx-intro canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;opacity:0;transition:opacity .8s}
+#dx-intro.gl-ready canvas{opacity:1}
+#dx-intro .dx-top{position:absolute;left:0;right:0;top:max(22px,env(safe-area-inset-top));text-align:center;pointer-events:none;z-index:3;animation:dxIn .9s .2s both}
+#dx-intro .dx-logo{font-family:'Archivo Black',Inter,sans-serif;font-size:clamp(34px,6.4vw,64px);letter-spacing:.04em;line-height:1;text-shadow:0 0 28px rgba(255,94,138,.55)}
+#dx-intro .dx-logo b{background:linear-gradient(90deg,#ff5e8a,#ffb347);-webkit-background-clip:text;background-clip:text;color:transparent}
+#dx-intro .dx-sub{margin-top:10px;font-size:clamp(13px,1.8vw,17px);letter-spacing:.32em;text-transform:uppercase;color:#e9d5ff;opacity:.85}
+#dx-intro .dx-moons{position:absolute;inset:0;pointer-events:none;z-index:2}
+#dx-intro .dx-moon{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:7px;padding:8px 14px 8px 10px;border-radius:999px;border:1.5px solid rgba(255,255,255,.18);background:rgba(10,4,24,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;font:800 14px/1 Inter,sans-serif;white-space:nowrap;cursor:pointer;opacity:0;transition:opacity .35s,border-color .2s,background .2s,box-shadow .2s;will-change:transform}
+#dx-intro .dx-moon i{font-style:normal;font-size:17px}
+#dx-intro .dx-moon.on,#dx-intro .dx-moon:focus-visible{border-color:var(--c);background:color-mix(in srgb,var(--c) 30%,rgba(10,4,24,.8));box-shadow:0 0 22px color-mix(in srgb,var(--c) 70%,transparent);outline:none}
+#dx-intro .dx-bot{position:absolute;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));display:flex;justify-content:center;gap:12px;flex-wrap:wrap;z-index:3;padding:0 16px;animation:dxIn .9s 1.4s both}
+#dx-intro .dx-btn{border:0;border-radius:999px;padding:14px 26px;font:900 15px/1 Inter,sans-serif;letter-spacing:.04em;cursor:pointer}
+#dx-intro .dx-enter{background:linear-gradient(90deg,#ff5e8a,#ffb347);color:#1a0b2e;box-shadow:0 8px 30px rgba(255,94,138,.45)}
+#dx-intro .dx-skip{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.25)}
+#dx-intro .dx-hint{position:absolute;left:0;right:0;bottom:calc(max(22px,env(safe-area-inset-bottom)) + 62px);text-align:center;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#c4b5fd;opacity:.7;z-index:3;pointer-events:none;animation:dxIn .9s 1.8s both}
+#dx-intro .dx-load{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffb347,#ff5e8a 45%,#7b2a8f 80%);box-shadow:0 0 60px #ff5e8a88;animation:dxPulse 1.2s ease-in-out infinite;transition:opacity .5s}
+#dx-intro.gl-ready .dx-load{opacity:0}
+#dx-intro::after{content:"";position:absolute;inset:0;background:#fff;opacity:calc(var(--fl,0)*.55);pointer-events:none;z-index:4}
+/* sans WebGL : grille de boutons */
+#dx-intro.nogl .dx-load{display:none}
+#dx-intro.nogl .dx-moons{position:absolute;inset:auto 0 auto 0;top:50%;transform:translateY(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:12px;padding:0 16px;pointer-events:auto}
+#dx-intro.nogl .dx-moon{position:static;opacity:1;transform:none!important;font-size:16px;padding:12px 18px}
+#dx-intro.nogl .dx-hint{display:none}
+@keyframes dxIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes dxPulse{50%{transform:scale(1.08)}}
+@media (max-width:700px){#dx-intro .dx-moon{font-size:12.5px;padding:7px 11px 7px 8px}#dx-intro .dx-moon i{font-size:15px}#dx-intro .dx-hint{display:none}}
+html.dx-lock,html.dx-lock body{overflow:hidden!important}
+</style>
+<div id="dx-intro" role="dialog" aria-label="Bienvenue sur ANIMEDEX : choisis une section">
+  <canvas aria-hidden="true"></canvas>
+  <div class="dx-load" aria-hidden="true"></div>
+  <div class="dx-top"><div class="dx-logo">ANIME<b>DEX</b></div><div class="dx-sub">Choisis ta destination</div></div>
+  <div class="dx-moons">
+    <button class="dx-moon" data-go="anime" data-c="#ff5e8a" style="--c:#ff5e8a"><i>📺</i>Animés</button>
+    <button class="dx-moon" data-go="daily" data-c="#facc15" style="--c:#facc15"><i>🎯</i>Défi du jour</button>
+    <button class="dx-moon" data-go="manga" data-c="#ffb347" style="--c:#ffb347"><i>📚</i>Mangas</button>
+    <button class="dx-moon" data-go="blindtest" data-c="#22d3ee" style="--c:#22d3ee"><i>🎵</i>Blind test</button>
+    <button class="dx-moon" data-go="quiz" data-c="#a78bfa" style="--c:#a78bfa"><i>🧠</i>Quiz</button>
+    <button class="dx-moon" data-go="imposter" data-c="#f43f5e" style="--c:#f43f5e"><i>🕵️</i>Imposteur</button>
+    <button class="dx-moon" data-go="defi" data-c="#4ade80" style="--c:#4ade80"><i>⚔️</i>Défier un ami</button>
+    <button class="dx-moon" data-go="auction" data-c="#fb923c" style="--c:#fb923c"><i>💰</i>Enchères</button>
+  </div>
+  <div class="dx-hint">Fais tourner la planète · clique sur une lune</div>
+  <div class="dx-bot"><button class="dx-btn dx-enter" data-go="anime">Entrer sur le site →</button><button class="dx-btn dx-skip" data-go="skip">Passer</button></div>
+</div>
+<script id="dx-intro-js">
+(function(){
+  var root=document.getElementById('dx-intro');if(!root)return;
+  var q=location.search||'';
+  // liens directs (défi, salle, ajout d'ami, ancre) : pas d'intro
+  if(/[?&](defi|salle|add)=/.test(q)||location.hash.length>1){root.remove();var c=document.getElementById('dx-intro-css');if(c)c.remove();return}
+  document.documentElement.classList.add('dx-lock');
+  var done=false;
+  function act(k){
+    try{
+      if(k==='skip'||k==='anime'){if(k==='anime')switchView('anime');return}
+      if(k==='daily'||k==='defi'){switchView('anime');setTimeout(function(){var b=document.getElementById(k==='daily'?'mx-daily-btn':'mx-defi-btn');if(b)b.click()},160);return}
+      switchView(k);
+    }catch(e){}
+  }
+  function close(k){
+    if(done)return;done=true;
+    act(k);
+    root.classList.add('out');document.documentElement.classList.remove('dx-lock');
+    root.dispatchEvent(new CustomEvent('dx-close'));
+    setTimeout(function(){root.remove()},650);
+  }
+  window.dxIntroGo=function(el){
+    if(done||!el)return;var k=el.getAttribute('data-go');
+    if(el.classList.contains('dx-moon')&&root.classList.contains('gl-ready')){root.dispatchEvent(new CustomEvent('dx-go',{detail:el}));setTimeout(function(){close(k)},800)}
+    else close(k);
+  };
+  root.addEventListener('click',function(e){var b=e.target.closest('[data-go]');if(b){e.preventDefault();window.dxIntroGo(b)}});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close('skip')});
+  // WebGL indisponible ou script bloqué : grille de boutons
+  setTimeout(function(){if(!root.classList.contains('gl-ready'))root.classList.add('nogl')},5000);
+  var s=document.createElement('script');s.type='module';s.src='/dx-intro.js?v=1';s.onerror=function(){root.classList.add('nogl')};document.head.appendChild(s);
+})();
+</script>
+<!-- ==== fin intro 3D ==== -->
+
 
 <!-- ================= ANIMEDEX MOTION : intro ================= -->
 <div id="mx-intro" aria-hidden="true">
