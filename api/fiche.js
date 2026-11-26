@@ -119,7 +119,7 @@ ${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\
 <header><a class="brand" href="${P}/"><i></i>ANIMEDEX</a><nav><a href="${P}/anime">${L.anime}</a><a href="${P}/manga">${L.manga}</a><a href="${P}/">${L.games}</a><a href="${LG === 'en' ? SITE + path.replace('/similar', '/similaires') + '?lang=fr' : SITE + '/en' + path.replace('/similaires', '/similar')}" hreflang="${LG === 'en' ? 'fr' : 'en'}" lang="${LG === 'en' ? 'fr' : 'en'}">${LG === 'en' ? 'FR' : 'EN'}</a></nav></header>
 <main>${body}</main>
 <footer>${L.foot}<br>
-<a href="${P}/">${L.home}</a> · <a href="${P}/anime">${L.allA}</a> · <a href="${P}/manga">${L.allM}</a> · <a href="/confidentialite.html">${L.privacy}</a><br><a href="/a-propos.html">${LG === 'en' ? 'About' : 'À propos'}</a> · <a href="/contact.html">Contact</a> · <a href="/mentions-legales.html">${LG === 'en' ? 'Legal notice' : 'Mentions légales'}</a></footer>
+<a href="${P}/">${L.home}</a> · <a href="${P}/anime">${L.allA}</a> · <a href="${P}/manga">${L.allM}</a> · <a href="/confidentialite.html">${L.privacy}</a><br>${LG === 'en' ? '' : '<a href="/articles/">Articles</a> · '}<a href="/a-propos.html">${LG === 'en' ? 'About' : 'À propos'}</a> · <a href="/contact.html">Contact</a> · <a href="/mentions-legales.html">${LG === 'en' ? 'Legal notice' : 'Mentions légales'}</a></footer>
 </body></html>`;
 }
 
