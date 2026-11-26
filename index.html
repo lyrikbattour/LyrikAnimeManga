@@ -676,6 +676,7 @@ a.mx-goto{text-decoration:none; color:inherit; cursor:pointer;}
 <link rel="canonical" href="https://animedexfr.fr/">
 <meta name="google-adsense-account" content="ca-pub-4801221579985379">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ANIMEDEX","url":"https://animedexfr.fr/","inLanguage":"fr","description":"Encyclopédie anime & manga : fiches, personnages, OST, quiz et jeux entre amis."}</script>
+<style id="mx-about-css">.mx-about{margin:56px 0 8px;padding:28px 0 0;border-top:1px solid var(--line,rgba(0,0,0,.12));max-width:900px}.mx-about h2{font-size:clamp(20px,3vw,28px);margin:0 0 14px;text-wrap:balance}.mx-about h3{font-size:15px;text-transform:uppercase;letter-spacing:.06em;margin:26px 0 10px}.mx-about p{line-height:1.65;margin:0 0 12px;max-width:70ch}.mx-about-list{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}.mx-about-list a{display:inline-block;padding:6px 12px;border:1px solid var(--line,rgba(0,0,0,.15));border-radius:999px;text-decoration:none;color:inherit;font-size:14px}.mx-about-list a:hover{border-color:currentColor}.mx-about-more a{font-weight:600}html[lang=en] .mx-about{display:none}</style>
 </head>
 <body>
 <!-- ==== ANIMEDEX — intro rue néon (manga) ==== -->
@@ -745,7 +746,7 @@ html.dx-lock,html.dx-lock body{overflow:hidden!important}
 <script id="dx-intro-js">(function(){
 var root=document.getElementById('dx-intro');if(!root)return;
 var q=location.search||'';
-if(/[?&](defi|salle|add|daily)=/.test(q)||location.hash.length>1){root.remove();var c0=document.getElementById('dx-intro-css');if(c0)c0.remove();return}
+if(/[?&](defi|salle|add|daily)=/.test(q)||location.hash.length>1||/bot|crawl|spider|slurp|mediapartners|adsbot|google-|lighthouse|headless/i.test(navigator.userAgent)){root.remove();var c0=document.getElementById('dx-intro-css');if(c0)c0.remove();return}
 document.documentElement.classList.add('dx-lock');
 var A=window.DXA||{l:'/img/intro-rue-l.webp',p:'/img/intro-rue-p.webp',walk:'/img/dex-walk.webp?v=2',run:'/img/dex-run.webp?v=2'};
 var S8=[
@@ -849,7 +850,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
   var seen = false;
   try { seen = sessionStorage.getItem('mxIntroSeen') === '1'; } catch(e){}
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(seen || reduce){ el.parentNode.removeChild(el); return; }
+  if(seen || reduce || /bot|crawl|spider|slurp|mediapartners|adsbot|google-|lighthouse|headless/i.test(navigator.userAgent)){ el.parentNode.removeChild(el); return; }
   try { sessionStorage.setItem('mxIntroSeen','1'); } catch(e){}
 
   // lignes de vitesse (style manga)
@@ -951,6 +952,18 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
     <div class="chips-row" id="chips-anime"></div>
     <div class="result-count" id="count-anime"></div>
     <div class="grid" id="grid-anime"></div>
+    <section id="mx-about" class="mx-about" aria-labelledby="mx-about-h">
+      <h2 id="mx-about-h">ANIMEDEX, l'encyclopédie anime &amp; manga en français</h2>
+      <p>ANIMEDEX est une encyclopédie gratuite, créée par un passionné, pour retrouver en un seul endroit tout ce qu'il faut savoir sur une série : un résumé rédigé en français, les personnages clés présentés un par un, les openings et endings, les meilleures musiques et, pour les séries les plus connues, notre avis et l'ordre conseillé pour les regarder. Le catalogue compte aujourd'hui plus de 409 animés et 197 mangas, des grands classiques comme Naruto, One Piece ou Fullmetal Alchemist aux nouveautés de la saison en cours, mises à jour automatiquement chaque jour.</p>
+      <p>Chaque fiche propose aussi des recommandations « Si tu as aimé… », pour trouver ta prochaine série à partir de celles que tu as déjà adorées. Et parce qu'un animé se partage, le site propose des jeux à faire entre amis : un quiz de personnages, un blind test d'openings, un défi du jour, un jeu de l'imposteur et des enchères de personnages.</p>
+      <h3>Les fiches les plus consultées</h3>
+      <ul class="mx-about-list"><li><a href="/anime/naruto">Naruto</a></li><li><a href="/anime/one-piece">One Piece</a></li><li><a href="/anime/aot">L&#x27;Attaque des Titans</a></li><li><a href="/anime/death-note">Death Note</a></li><li><a href="/anime/demon-slayer">Demon Slayer</a></li><li><a href="/anime/jjk">Jujutsu Kaisen</a></li><li><a href="/anime/fmab">Fullmetal Alchemist: Brotherhood</a></li><li><a href="/anime/hxh">Hunter x Hunter</a></li><li><a href="/anime/chainsaw-man">Chainsaw Man</a></li><li><a href="/anime/spy-x-family">Spy x Family</a></li><li><a href="/anime/frieren-anime">Frieren: Beyond Journey&#x27;s End</a></li><li><a href="/anime/solo-leveling">Solo Leveling</a></li><li><a href="/anime/vinland-saga">Vinland Saga</a></li><li><a href="/anime/steins-gate">Steins;Gate</a></li><li><a href="/anime/cowboy-bebop">Cowboy Bebop</a></li><li><a href="/anime/haikyu">Haikyu!!</a></li><li><a href="/anime/blue-lock-anime">Blue Lock</a></li><li><a href="/anime/violet-evergarden">Violet Evergarden</a></li><li><a href="/anime/mob-psycho">Mob Psycho 100</a></li><li><a href="/anime/kaguya-sama">Kaguya-sama: Love is War</a></li></ul>
+      <h3>Ajoutées récemment</h3>
+      <ul class="mx-about-list"><li><a href="/anime/darling-in-the-franxx">DARLING in the FRANXX</a></li><li><a href="/anime/puella-magi-madoka-magica">Puella Magi Madoka Magica</a></li><li><a href="/anime/komi-cant-communicate">Komi Can’t Communicate</a></li><li><a href="/anime/pokemon">Pokémon</a></li><li><a href="/anime/paprika">Paprika</a></li><li><a href="/anime/summer-time-rendering">Summer Time Rendering</a></li><li><a href="/anime/yona-of-the-dawn">Yona of the Dawn</a></li><li><a href="/anime/laid-back-camp">Laid-Back Camp</a></li><li><a href="/anime/dungeon-meshi">Dungeon Meshi</a></li></ul>
+      <h3>Côté mangas</h3>
+      <ul class="mx-about-list"><li><a href="/manga/berserk">Berserk</a></li><li><a href="/manga/vagabond">Vagabond</a></li><li><a href="/manga/vinland-saga-manga">Vinland Saga</a></li><li><a href="/manga/chainsaw-man-manga">Chainsaw Man</a></li><li><a href="/manga/jjk-manga">Jujutsu Kaisen</a></li><li><a href="/manga/one-punch-man">One Punch Man</a></li><li><a href="/manga/tokyo-ghoul">Tokyo Ghoul</a></li><li><a href="/manga/monster">Monster</a></li><li><a href="/manga/fma-manga">Fullmetal Alchemist</a></li><li><a href="/manga/slam-dunk">Slam Dunk</a></li><li><a href="/manga/uzumaki">Uzumaki</a></li><li><a href="/manga/golden-kamuy">Golden Kamuy</a></li></ul>
+      <p class="mx-about-more"><a href="/anime">Voir tous les animés</a> · <a href="/manga">Voir tous les mangas</a> · <a href="/a-propos.html">Qui sommes-nous ?</a></p>
+    </section>
   </section>
 
   <!-- MANGA LIST -->
@@ -994,6 +1007,11 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
     <div class="detail-section">
       <div class="section-label">Résumé</div>
       <p class="summary-text" id="detail-summary"></p>
+    </div>
+
+    <div class="detail-section" id="section-avis" style="display:none">
+      <div class="section-label">Notre avis</div>
+      <div class="summary-text" id="detail-avis"></div>
     </div>
 
     <div class="detail-section" id="section-eps" style="display:none">
@@ -1703,13 +1721,13 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
       <h2>Conditions Générales d'Utilisation</h2>
     </div>
     <div class="detail-section legal-text">
-      <p><b>ANIMEDEX est un projet de démonstration fan-made</b>, non officiel, sans lien avec les studios, éditeurs ou ayants droit des animés et mangas référencés. Les titres, noms et descriptions cités appartiennent à leurs propriétaires respectifs et sont utilisés ici à titre informatif. Le site peut percevoir une commission via des liens d'affiliation.</p>
+      <p><b>ANIMEDEX est une encyclopédie créée par un fan</b>, non officielle, sans lien avec les studios, éditeurs ou ayants droit des animés et mangas référencés. Les titres, noms et descriptions cités appartiennent à leurs propriétaires respectifs et sont utilisés ici à titre informatif. Le site peut percevoir une commission via des liens d'affiliation.</p>
       <div class="section-label">Utilisation du site</div>
       <p>Le site est fourni "tel quel", sans garantie de disponibilité, d'exactitude ou de continuité de service. Le contenu (comptes, favoris, commentaires, notes) est stocké sur une base de données partagée sans garantie de sécurité de niveau professionnel.</p>
       <div class="section-label">Comportement attendu</div>
       <p>En utilisant les fonctionnalités communautaires (commentaires, pseudo), tu t'engages à ne pas publier de contenu illégal, injurieux, ou à ne pas usurper l'identité d'autrui.</p>
       <div class="section-label">Comptes</div>
-      <p>Les comptes créés sont des comptes de démonstration. Aucune garantie n'est donnée quant à la conservation à long terme des données associées.</p>
+      <p>Les comptes sont gratuits et facultatifs. Aucune garantie n'est donnée quant à la conservation à long terme des données associées.</p>
       <div class="section-label">Contact</div>
       <p>Pour toute question, contacte l'administrateur du site.</p>
     </div>
@@ -1717,7 +1735,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
 
 </main>
 
-<footer>ANIMEDEX — projet de démonstration · fan-content non officiel<br>
+<footer>ANIMEDEX — encyclopédie anime &amp; manga en français · site de fan indépendant, non affilié aux ayants droit<br>
+  <a class="footer-link" href="/a-propos.html">À propos</a> · <a class="footer-link" href="/contact.html">Contact</a> · <a class="footer-link" href="/mentions-legales.html">Mentions légales</a> · <a class="footer-link" href="/confidentialite.html">Confidentialité</a><br>
   <a class="footer-link" href="/anime">Tous les animés</a> · <a class="footer-link" href="/manga">Tous les mangas</a> ·
   <button class="footer-link" id="footer-privacy-link">Politique de confidentialité</button> · <button class="footer-link" id="footer-terms-link">CGU</button> · <button class="footer-link mx-lang-f" type="button" data-mxlang data-noi18n>EN</button>
 </footer>
@@ -1799,7 +1818,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!done)close
 
 <script src="/data/catalogue-a898b832dc.js"></script>
 <script src="/data/saison-ea5aa2f6b8.js"></script>
-<script src="/data/plus-6f25679e1c.js"></script>
+<script src="/data/plus-3d62f48bc1.js"></script>
 <script>window.mxApplyEN&&mxApplyEN()</script>
 <script>
 // ============== HELPERS ==============
@@ -2171,6 +2190,7 @@ function openDetail(id, type){
   }
 
   document.getElementById('detail-summary').textContent = item.summary;
+  (function(){var sa=document.getElementById('section-avis'),av=item.avis;if(!sa)return;if(av&&window.MX_LANG!=='en'){var e=function(t){return String(t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})};document.getElementById('detail-avis').innerHTML='<p>'+e(av.a)+'</p><p><b>Pour qui ?</b> '+e(av.p)+'</p><p><b>Par où commencer ?</b> '+e(av.d)+'</p>';sa.style.display=''}else sa.style.display='none'})();
 
   if(type==='anime'){
     if(item.ost){

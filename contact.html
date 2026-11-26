@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contact – ANIMEDEX</title><meta name="description" content="Contacter ANIMEDEX : signaler une erreur dans une fiche, proposer une série ou poser une question.">
+<meta name="robots" content="index,follow"><link rel="canonical" href="https://animedexfr.fr/contact.html">
+<link rel="icon" href="/icon-192-v2.png">
+<style>body{margin:0;background:#0f0f10;color:#eee;font:16px/1.65 system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px 20px 64px}a{color:#ff4d2e}
+h1{font-size:28px;margin:8px 0 20px}h2{font-size:18px;margin:28px 0 8px;color:#ff4d2e;text-transform:uppercase;letter-spacing:.06em}
+label{display:block;margin:14px 0 4px;font-weight:600}input,textarea{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #333;background:#18181b;color:#eee;font:inherit}
+textarea{min-height:160px}button{margin-top:16px;padding:12px 22px;border:0;border-radius:8px;background:#ff4d2e;color:#fff;font:600 16px system-ui;cursor:pointer}
+.ok{color:#4ade80}.err{color:#f87171}nav.f{margin-top:40px;font-size:14px;color:#999}</style></head>
+<body><main><a href="/">← Retour à ANIMEDEX</a><h1>Contact</h1>
+<p>Une erreur dans une fiche, une série qui manque au catalogue, une idée de jeu ou une question ? Laisse un message ci-dessous, il arrive directement à l'administrateur du site. Si tu veux une réponse, pense à indiquer ton adresse e-mail.</p>
+<form id="cf" novalidate>
+<label for="cf-n">Ton pseudo</label><input id="cf-n" maxlength="40" required>
+<label for="cf-e">Ton e-mail (facultatif, pour te répondre)</label><input id="cf-e" type="email" maxlength="120">
+<label for="cf-m">Ton message</label><textarea id="cf-m" maxlength="1500" required></textarea>
+<button type="submit" id="cf-b">Envoyer</button>
+<p id="cf-s" role="status"></p>
+</form>
+<h2>Ayants droit</h2>
+<p>Si tu représentes un ayant droit et qu'un contenu publié sur ANIMEDEX te pose problème, précise l'adresse de la page concernée dans ton message : il sera examiné et retiré rapidement si nécessaire.</p>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+const db = getFirestore(initializeApp({
+    apiKey: "AIzaSyA3TQ1qM2DkJiYoLv7TbmhJl-By3QwDq1Y",
+    authDomain: "lyrikanimemanga.firebaseapp.com",
+    projectId: "lyrikanimemanga",
+    storageBucket: "lyrikanimemanga.firebasestorage.app",
+    messagingSenderId: "705726374895",
+    appId: "1:705726374895:web:95de501294bb89871b4c1a"
+  }));
+const f=document.getElementById('cf'),s=document.getElementById('cf-s'),b=document.getElementById('cf-b');
+let last=0;
+f.addEventListener('submit',async e=>{e.preventDefault();
+ const n=document.getElementById('cf-n').value.trim(),em=document.getElementById('cf-e').value.trim(),m=document.getElementById('cf-m').value.trim();
+ if(!n||m.length<5){s.className='err';s.textContent='Indique ton pseudo et un message.';return}
+ if(Date.now()-last<30000){s.className='err';s.textContent='Patiente quelques secondes avant de renvoyer un message.';return}
+ b.disabled=true;s.className='';s.textContent='Envoi…';
+ try{await addDoc(collection(db,'chat_reports'),{room:'contact',msgId:'',text:m.slice(0,1500),author:n.slice(0,40),authorUid:'',by:em.slice(0,120)||'(pas d\'e-mail)',ts:Date.now()});
+  last=Date.now();f.reset();s.className='ok';s.textContent='Merci ! Ton message a bien été envoyé.'}
+ catch(err){s.className='err';s.textContent='L\'envoi a échoué. Réessaie dans un moment.'}
+ b.disabled=false});
+</script>
+<nav class="f"><a href="/">Accueil</a> · <a href="/anime">Animés</a> · <a href="/manga">Mangas</a> · <a href="/a-propos.html">À propos</a> · <a href="/contact.html">Contact</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a></nav>
+</main></body></html>
