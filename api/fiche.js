@@ -90,6 +90,7 @@ h2{font-family:var(--display);font-size:22px;letter-spacing:-.4px;margin:44px 0 
 .grid img{width:100%;aspect-ratio:2/3;object-fit:cover;border:1px solid var(--ink);display:block;background:var(--bg-alt)}
 .grid span{display:block;font-size:13px;font-weight:600;margin-top:6px;line-height:1.25}
 .lede{color:var(--ink-soft);max-width:62ch;margin-top:10px}
+.avis p{line-height:1.65;max-width:70ch;margin:0 0 10px}
 footer{border-top:2px solid var(--ink);padding:22px 16px;font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-align:center;line-height:1.9}
 a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .recos{list-style:none;margin:0;padding:0;display:grid;gap:14px}.rc{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;border:1.5px solid var(--ink);padding:12px;background:var(--bg)}.rc img{width:96px;height:144px;object-fit:cover;border:1.5px solid var(--ink);display:block}.rc h3{margin:2px 0 4px;font-size:18px}.rc h3 a{color:inherit}.rc p{margin:4px 0;line-height:1.5}.rc .why{font-family:var(--mono,monospace);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
@@ -118,7 +119,7 @@ ${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\
 <header><a class="brand" href="${P}/"><i></i>ANIMEDEX</a><nav><a href="${P}/anime">${L.anime}</a><a href="${P}/manga">${L.manga}</a><a href="${P}/">${L.games}</a><a href="${LG === 'en' ? SITE + path.replace('/similar', '/similaires') + '?lang=fr' : SITE + '/en' + path.replace('/similaires', '/similar')}" hreflang="${LG === 'en' ? 'fr' : 'en'}" lang="${LG === 'en' ? 'fr' : 'en'}">${LG === 'en' ? 'FR' : 'EN'}</a></nav></header>
 <main>${body}</main>
 <footer>${L.foot}<br>
-<a href="${P}/">${L.home}</a> · <a href="${P}/anime">${L.allA}</a> · <a href="${P}/manga">${L.allM}</a> · <a href="/confidentialite.html">${L.privacy}</a></footer>
+<a href="${P}/">${L.home}</a> · <a href="${P}/anime">${L.allA}</a> · <a href="${P}/manga">${L.allM}</a> · <a href="/confidentialite.html">${L.privacy}</a><br><a href="/a-propos.html">${LG === 'en' ? 'About' : 'À propos'}</a> · <a href="/contact.html">Contact</a> · <a href="/mentions-legales.html">${LG === 'en' ? 'Legal notice' : 'Mentions légales'}</a></footer>
 </body></html>`;
 }
 
@@ -173,6 +174,7 @@ function pageItem(it, type) {
     </div>
   </div>
 </div>
+${LG === 'fr' && it.avis ? `<h2>Notre avis sur ${esc(it.title)}</h2><div class="avis"><p>${esc(it.avis.a)}</p><p><b>Pour qui ?</b> ${esc(it.avis.p)}</p><p><b>Par où commencer ?</b> ${esc(it.avis.d)}</p></div>` : ''}
 ${chars ? `<h2>${L.chars(esc(it.title))}</h2><ul class="chars">${chars}</ul>` : ''}
 ${music ? `<h2>${L.music(esc(it.title))}</h2><div class="cols">${music}</div>` : ''}
 <h2>${L.where(esc(it.title))}</h2>
